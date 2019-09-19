@@ -1,22 +1,30 @@
 ﻿namespace Services
 {
+    using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.SimpleEmail;
     using Amazon.SimpleEmail.Model;
     using Common;
+    using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Options;
+    using static Common.EventIds;
 
     public class AmazonEmailService : IEmailService
     {
         private readonly string _accessKeyId;
         private readonly string _secretAccessKey;
+        private readonly ILogger<AmazonEmailService> _logger;
 
-        public AmazonEmailService(IOptions<AmazonEmailOptions> emailOptions)
+        public AmazonEmailService(
+            IOptions<AmazonEmailOptions> amazonEmailOptions,
+            ILogger<AmazonEmailService> logger)
         {
-            _accessKeyId = emailOptions.Value.AccessKeyId;
-            _secretAccessKey = emailOptions.Value.SecretAccessKey;
+            _accessKeyId = amazonEmailOptions.Value.AccessKeyId;
+            _secretAccessKey = amazonEmailOptions.Value.SecretAccessKey;
+            _logger = logger;
         }
 
         public async Task SendEmailAsync(
@@ -32,7 +40,7 @@
                 Source = source,
                 Destination = new Destination
                 {
-                    ToAddresses = new List<string>(destinations)
+                    ToAddresses = destinations.ToList()
                 },
                 Message = new Message
                 {
@@ -41,7 +49,7 @@
                     {
                         Html = new Content
                         {
-                            Charset = "UTF-8",
+                            Charset = System.Text.Encoding.UTF8.HeaderName,
                             Data = htmlBody
                         }
                     }
@@ -51,7 +59,7 @@
             {
                 sendRequest.Message.Body.Text = new Content
                 {
-                    Charset = "UTF-8",
+                    Charset = System.Text.Encoding.UTF8.HeaderName,
                     Data = textBody
                 };
             }
@@ -60,6 +68,12 @@
             {
                 await client.SendEmailAsync(sendRequest, cancellationToken).ConfigureAwait(false);
             }
+
+            _logger.Log(
+                logLevel: LogLevel.Information,
+                eventId: new EventId((int)EmailSent, $"{EmailSent}"),
+                message: "Email {@Body} sent at {@Time}",
+                args: new object[] { htmlBody, DateTime.UtcNow });
         }
     }
 }

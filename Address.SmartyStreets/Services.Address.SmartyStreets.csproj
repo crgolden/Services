@@ -44,7 +44,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Common\Abstractions\Common.Abstractions.csproj" />
-    <ProjectReference Include="..\..\Common\Options\Common.Options.csproj" />
   </ItemGroup>
 
 </Project>

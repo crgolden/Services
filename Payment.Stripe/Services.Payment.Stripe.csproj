@@ -31,12 +31,11 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Options" Version="2.2.0" />
-    <PackageReference Include="Stripe.net" Version="28.5.0" />
+    <PackageReference Include="Stripe.net" Version="29.1.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Common\Abstractions\Common.Abstractions.csproj" />
-    <ProjectReference Include="..\..\Common\Options\Common.Options.csproj" />
   </ItemGroup>
 
 </Project>
