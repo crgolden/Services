@@ -1,19 +1,22 @@
 ﻿namespace Services
 {
-    using System.Data;
+    using System;
+    using System.Data.Common;
     using System.Data.SqlClient;
     using Common;
     using Microsoft.Extensions.Options;
 
-    public class SqlDbService : IDbService
+    public class SqlDbService : DbProviderFactory, IDbService
     {
         private readonly SqlConnectionStringBuilder _connectionStringBuilder;
-        private IDbConnection _dbConnection;
-
-        public string Provider => "Sql";
 
         public SqlDbService(IOptions<SqlDbOptions> sqlDbOptions)
         {
+            if (sqlDbOptions.Value == default)
+            {
+                throw new ArgumentNullException(nameof(SqlDbOptions));
+            }
+
             _connectionStringBuilder = new SqlConnectionStringBuilder
             {
                 DataSource = sqlDbOptions.Value.DataSource,
@@ -22,14 +25,18 @@
             };
         }
 
-        public IDbConnection GetConnection()
-        {
-            return _dbConnection ?? (_dbConnection = new SqlConnection(_connectionStringBuilder.ConnectionString));
-        }
+        public string Provider => "Sql";
 
-        public IDbDataAdapter GetDataAdapter(string commandText)
-        {
-            return new SqlDataAdapter(commandText, _connectionStringBuilder.ConnectionString);
-        }
+        public override DbCommand CreateCommand() => new SqlCommand();
+
+        public override DbCommandBuilder CreateCommandBuilder() => new SqlCommandBuilder();
+
+        public override DbConnection CreateConnection() => new SqlConnection(_connectionStringBuilder.ConnectionString);
+
+        public override DbConnectionStringBuilder CreateConnectionStringBuilder() => _connectionStringBuilder;
+
+        public override DbDataAdapter CreateDataAdapter() => new SqlDataAdapter();
+
+        public override DbParameter CreateParameter() => new SqlParameter();
     }
 }

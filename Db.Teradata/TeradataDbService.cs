@@ -1,19 +1,22 @@
 ﻿namespace Services
 {
-    using System.Data;
+    using System;
+    using System.Data.Common;
     using Common;
-    using Teradata.Client.Provider;
     using Microsoft.Extensions.Options;
+    using Teradata.Client.Provider;
 
-    public class TeradataDbService : IDbService
+    public class TeradataDbService : DbProviderFactory, IDbService
     {
         private readonly TdConnectionStringBuilder _connectionStringBuilder;
-        private IDbConnection _dbConnection;
-
-        public string Provider => "Teradata";
 
         public TeradataDbService(IOptions<TeradataDbOptions> teradataDbOptions)
         {
+            if (teradataDbOptions.Value == default)
+            {
+                throw new ArgumentNullException(nameof(TeradataDbOptions));
+            }
+
             _connectionStringBuilder = new TdConnectionStringBuilder
             {
                 DataSource = teradataDbOptions.Value.DataSource,
@@ -24,14 +27,18 @@
             };
         }
 
-        public IDbConnection GetConnection()
-        {
-            return _dbConnection ?? (_dbConnection = new TdConnection(_connectionStringBuilder.ConnectionString));
-        }
+        public string Provider => "Teradata";
 
-        public IDbDataAdapter GetDataAdapter(string commandText)
-        {
-            return new TdDataAdapter(commandText, _connectionStringBuilder.ConnectionString);
-        }
+        public override DbCommand CreateCommand() => new TdCommand();
+
+        public override DbCommandBuilder CreateCommandBuilder() => new TdCommandBuilder();
+
+        public override DbConnection CreateConnection() => new TdConnection(_connectionStringBuilder.ConnectionString);
+
+        public override DbConnectionStringBuilder CreateConnectionStringBuilder() => _connectionStringBuilder;
+
+        public override DbDataAdapter CreateDataAdapter() => new TdDataAdapter();
+
+        public override DbParameter CreateParameter() => new TdParameter();
     }
 }
