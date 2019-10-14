@@ -12,9 +12,9 @@
 
         public TeradataDbService(IOptions<TeradataDbOptions> teradataDbOptions)
         {
-            if (teradataDbOptions.Value == default)
+            if (teradataDbOptions?.Value == default)
             {
-                throw new ArgumentNullException(nameof(TeradataDbOptions));
+                throw new ArgumentNullException(nameof(teradataDbOptions));
             }
 
             _connectionStringBuilder = new TdConnectionStringBuilder

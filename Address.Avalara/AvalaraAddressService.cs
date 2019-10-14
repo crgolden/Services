@@ -4,30 +4,25 @@
     using System.Collections.Generic;
     using System.Linq;
     using System.Net.Http;
-    using System.Net.Http.Headers;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Common;
-    using Microsoft.Extensions.Options;
+    using Microsoft.Extensions.Logging;
     using Models;
     using Newtonsoft.Json;
 
     public class AvalaraAddressService : IAddressService
     {
         private readonly HttpClient _httpClient;
+        private readonly ILogger<AvalaraAddressService> _logger;
 
         public AvalaraAddressService(
-            IOptions<AvalaraAddressOptions> addressOptions,
-            IHttpClientFactory httpClientFactory)
+            IHttpClientFactory httpClientFactory,
+            ILogger<AvalaraAddressService> logger)
         {
             _httpClient = httpClientFactory.CreateClient(nameof(AvalaraAddressService));
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
-                scheme: "Basic",
-                parameter: addressOptions.Value.LicenseKey);
-            _httpClient.BaseAddress = new Uri(addressOptions.Value.BaseAddress);
-            _httpClient.DefaultRequestHeaders.Accept.Clear();
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            _logger = logger;
         }
 
         public async Task<IEnumerable<Address>> ValidateAsync(
@@ -49,7 +44,7 @@
                 addressResolution = JsonConvert.DeserializeObject<AddressResolutionModel>(responseString);
             }
 
-            return addressResolution.ValidatedAddresses.Select(validatedAddress => new Address
+            return addressResolution.ValidatedAddresses?.Select(validatedAddress => new Address
             {
                 StreetAddress = validatedAddress.Line1,
                 Locality = validatedAddress.City,

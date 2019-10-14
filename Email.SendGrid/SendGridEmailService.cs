@@ -6,21 +6,20 @@
     using System.Threading.Tasks;
     using Common;
     using Microsoft.Extensions.Logging;
-    using Microsoft.Extensions.Options;
     using SendGrid;
     using SendGrid.Helpers.Mail;
-    using static Common.EventIds;
+    using static Common.EventId;
 
     public class SendGridEmailService : IEmailService
     {
-        private readonly SendGridClient _client;
+        private readonly ISendGridClient _sendGridClient;
         private readonly ILogger<SendGridEmailService> _logger;
 
         public SendGridEmailService(
-            IOptions<SendGridEmailOptions> sendGridEmailOptions,
+            ISendGridClient sendGridClient,
             ILogger<SendGridEmailService> logger)
         {
-            _client = new SendGridClient(sendGridEmailOptions.Value.ApiKey);
+            _sendGridClient = sendGridClient;
             _logger = logger;
         }
 
@@ -47,10 +46,10 @@
             // Disable click tracking.
             // See https://sendgrid.com/docs/User_Guide/Settings/tracking.html
             msg.SetClickTracking(false, false);
-            await _client.SendEmailAsync(msg, cancellationToken).ConfigureAwait(false);
+            await _sendGridClient.SendEmailAsync(msg, cancellationToken).ConfigureAwait(false);
             _logger.Log(
                 logLevel: LogLevel.Information,
-                eventId: new EventId((int)EmailSent, $"{EmailSent}"),
+                eventId: new Microsoft.Extensions.Logging.EventId((int)EmailSent, $"{EmailSent}"),
                 message: "Email {@Body} sent at {@Time}",
                 args: new object[] { htmlBody, DateTime.UtcNow });
         }

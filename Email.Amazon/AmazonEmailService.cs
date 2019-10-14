@@ -9,21 +9,18 @@
     using Amazon.SimpleEmail.Model;
     using Common;
     using Microsoft.Extensions.Logging;
-    using Microsoft.Extensions.Options;
-    using static Common.EventIds;
+    using static Common.EventId;
 
     public class AmazonEmailService : IEmailService
     {
-        private readonly string _accessKeyId;
-        private readonly string _secretAccessKey;
+        private readonly IAmazonSimpleEmailService _amazonSimpleEmailService;
         private readonly ILogger<AmazonEmailService> _logger;
 
         public AmazonEmailService(
-            IOptions<AmazonEmailOptions> amazonEmailOptions,
+            IAmazonSimpleEmailService amazonSimpleEmailService,
             ILogger<AmazonEmailService> logger)
         {
-            _accessKeyId = amazonEmailOptions.Value.AccessKeyId;
-            _secretAccessKey = amazonEmailOptions.Value.SecretAccessKey;
+            _amazonSimpleEmailService = amazonSimpleEmailService;
             _logger = logger;
         }
 
@@ -64,14 +61,10 @@
                 };
             }
 
-            using (var client = new AmazonSimpleEmailServiceClient(_accessKeyId, _secretAccessKey))
-            {
-                await client.SendEmailAsync(sendRequest, cancellationToken).ConfigureAwait(false);
-            }
-
+            await _amazonSimpleEmailService.SendEmailAsync(sendRequest, cancellationToken).ConfigureAwait(false);
             _logger.Log(
                 logLevel: LogLevel.Information,
-                eventId: new EventId((int)EmailSent, $"{EmailSent}"),
+                eventId: new Microsoft.Extensions.Logging.EventId((int)EmailSent, $"{EmailSent}"),
                 message: "Email {@Body} sent at {@Time}",
                 args: new object[] { htmlBody, DateTime.UtcNow });
         }

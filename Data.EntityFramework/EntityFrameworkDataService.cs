@@ -7,23 +7,26 @@
     using System.Threading.Tasks;
     using Common;
     using Microsoft.EntityFrameworkCore;
+    using Microsoft.Extensions.Logging;
 
     public class EntityFrameworkDataService : IDataService
     {
         private readonly DbContext _context;
+        private readonly ILogger<EntityFrameworkDataService> _logger;
 
-        public EntityFrameworkDataService(DbContext context) => _context = context;
+        public EntityFrameworkDataService(
+            DbContext context,
+            ILogger<EntityFrameworkDataService> logger)
+        {
+            _context = context;
+            _logger = logger;
+        }
 
         public async Task<T> CreateAsync<T>(
             T entity,
             CancellationToken cancellationToken = default)
             where T : class
         {
-            if (entity.Equals(default))
-            {
-                throw new ArgumentNullException(nameof(entity), "Invalid Entity");
-            }
-
             _context.Entry(entity).State = EntityState.Added;
             await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return entity;
@@ -34,11 +37,6 @@
             CancellationToken cancellationToken = default)
             where T : class
         {
-            if (predicate.Equals(default))
-            {
-                throw new ArgumentNullException(nameof(predicate), "Invalid Predicate");
-            }
-
             return await _context.Set<T>().SingleOrDefaultAsync(predicate, cancellationToken).ConfigureAwait(false);
         }
 
@@ -48,11 +46,6 @@
             CancellationToken cancellationToken = default)
             where T : class
         {
-            if (entity.Equals(default))
-            {
-                throw new ArgumentNullException(nameof(entity), "Invalid Entity");
-            }
-
             _context.Entry(entity).State = EntityState.Modified;
             await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }
@@ -62,11 +55,6 @@
             CancellationToken cancellationToken = default)
             where T : class
         {
-            if (predicate.Equals(default))
-            {
-                throw new ArgumentNullException(nameof(predicate), "Invalid Predicate");
-            }
-
             var entity = _context.Set<T>().SingleOrDefaultAsync(predicate, cancellationToken).ConfigureAwait(false);
             _context.Entry(entity).State = EntityState.Deleted;
             await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

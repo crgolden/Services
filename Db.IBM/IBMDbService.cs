@@ -12,9 +12,9 @@
 
         public IBMDbService(IOptions<IBMDbOptions> ibmDbOptions)
         {
-            if (ibmDbOptions.Value == default)
+            if (ibmDbOptions?.Value == default)
             {
-                throw new ArgumentNullException(nameof(IBMDbOptions));
+                throw new ArgumentNullException(nameof(ibmDbOptions));
             }
 
             _connectionStringBuilder = new DB2ConnectionStringBuilder

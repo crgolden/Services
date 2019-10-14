@@ -5,38 +5,41 @@
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
     using Quartz;
     using Quartz.Spi;
-    using static Common.EventIds;
+    using static Common.EventId;
 
     public class QuartzJobService : IHostedService
     {
-        private readonly ISchedulerFactory _schedulerFactory;
-        private readonly IJobFactory _jobFactory;
+        private readonly IServiceProvider _services;
         private readonly IReadOnlyDictionary<IJobDetail, IReadOnlyCollection<ITrigger>> _triggersAndJobs;
         private readonly ILogger<QuartzJobService> _logger;
-        private IScheduler _scheduler;
 
         public QuartzJobService(
-            ISchedulerFactory schedulerFactory,
-            IJobFactory jobFactory,
-            IEnumerable<QuartzJobDetail> jobDetails,
+            IServiceProvider services,
+            IEnumerable<IJob> jobDetails,
             ILogger<QuartzJobService> logger)
         {
-            _schedulerFactory = schedulerFactory;
-            _jobFactory = jobFactory;
+            _services = services;
             _triggersAndJobs = GetTriggersAndJobs(jobDetails);
             _logger = logger;
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            _scheduler = await _schedulerFactory.GetScheduler(cancellationToken).ConfigureAwait(false);
-            _scheduler.JobFactory = _jobFactory;
-            await _scheduler.ScheduleJobs(_triggersAndJobs, true, cancellationToken).ConfigureAwait(false);
-            await _scheduler.Start(cancellationToken).ConfigureAwait(false);
+            using (var scope = _services.CreateScope())
+            {
+                var schedulerFactory = scope.ServiceProvider.GetRequiredService<ISchedulerFactory>();
+                var jobFactory = scope.ServiceProvider.GetRequiredService<IJobFactory>();
+                var scheduler = await schedulerFactory.GetScheduler(cancellationToken).ConfigureAwait(false);
+                scheduler.JobFactory = jobFactory;
+                await scheduler.ScheduleJobs(_triggersAndJobs, true, cancellationToken).ConfigureAwait(false);
+                await scheduler.Start(cancellationToken).ConfigureAwait(false);
+            }
+
             _logger.Log(
                 logLevel: LogLevel.Information,
                 eventId: new EventId((int)HostedServiceStarted, $"{HostedServiceStarted}"),
@@ -46,9 +49,15 @@
 
         public async Task StopAsync(CancellationToken cancellationToken)
         {
-            var jobKeys = _triggersAndJobs.Keys.Select(x => x.Key).ToArray();
-            await _scheduler.DeleteJobs(jobKeys, cancellationToken).ConfigureAwait(false);
-            await _scheduler.Shutdown(cancellationToken).ConfigureAwait(false);
+            using (var scope = _services.CreateScope())
+            {
+                var schedulerFactory = scope.ServiceProvider.GetRequiredService<ISchedulerFactory>();
+                var scheduler = await schedulerFactory.GetScheduler(cancellationToken).ConfigureAwait(false);
+                var jobKeys = _triggersAndJobs.Keys.Select(x => x.Key).ToArray();
+                await scheduler.DeleteJobs(jobKeys, cancellationToken).ConfigureAwait(false);
+                await scheduler.Shutdown(cancellationToken).ConfigureAwait(false);
+            }
+
             _logger.Log(
                 logLevel: LogLevel.Information,
                 eventId: new EventId((int)HostedServiceStopped, $"{HostedServiceStopped}"),
@@ -57,21 +66,22 @@
         }
 
         private static IReadOnlyDictionary<IJobDetail, IReadOnlyCollection<ITrigger>> GetTriggersAndJobs(
-            IEnumerable<QuartzJobDetail> jobDetails)
+            IEnumerable<IJob> jobDetails)
         {
             var triggersAndJobs = new Dictionary<IJobDetail, IReadOnlyCollection<ITrigger>>();
-            foreach (var jobDetail in jobDetails)
+            foreach (var jobDetail in jobDetails.Where(x => x is QuartzJobDetail).Cast<QuartzJobDetail>())
             {
+                var type = jobDetail.GetType();
                 var job = JobBuilder
                     .Create()
-                    .OfType(jobDetail.Type)
-                    .WithDescription(jobDetail.Type.Name)
-                    .WithIdentity(jobDetail.Type.FullName)
+                    .OfType(type)
+                    .WithDescription(type.Name)
+                    .WithIdentity(type.FullName)
                     .Build();
                 var trigger = TriggerBuilder
                     .Create()
-                    .WithDescription($"{jobDetail.Type.Name}.Trigger")
-                    .WithIdentity($"{jobDetail.Type.FullName}.Trigger")
+                    .WithDescription($"{type.Name}.Trigger")
+                    .WithIdentity($"{type.FullName}.Trigger")
                     .WithCronSchedule(jobDetail.CronExpression)
                     .Build();
                 triggersAndJobs.Add(job, new[] { trigger });

@@ -3,19 +3,23 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Common;
-    using Microsoft.Extensions.Options;
+    using Microsoft.Extensions.Logging;
     using Stripe;
 
     public class StripePaymentService : IPaymentService
     {
         private readonly CustomerService _customerService;
         private readonly ChargeService _chargeService;
+        private readonly ILogger<StripePaymentService> _logger;
 
-        public StripePaymentService(IOptions<StripePaymentOptions> paymentOptions)
+        public StripePaymentService(
+            CustomerService customerService,
+            ChargeService chargeService,
+            ILogger<StripePaymentService> logger)
         {
-            var stripeClient = new StripeClient(paymentOptions.Value.SecretKey);
-            _customerService = new CustomerService(stripeClient);
-            _chargeService = new ChargeService(stripeClient);
+            _customerService = customerService;
+            _chargeService = chargeService;
+            _logger = logger;
         }
 
         public async Task<string> GetCustomerAsync(
@@ -56,10 +60,10 @@
         {
             var chargeCreateOptions = new ChargeCreateOptions
             {
-                Amount = (long?) amount * 100,
+                Amount = (long?)amount * 100,
                 Currency = currency,
                 Description = description,
-                CustomerId = customerId,
+                Customer = customerId,
                 Capture = false
             };
             var charge = await _chargeService.CreateAsync(
@@ -81,7 +85,7 @@
                 Amount = (long?)amount * 100,
                 Currency = currency,
                 Description = description,
-                CustomerId = customerId,
+                Customer = customerId,
                 Capture = true
             };
             var charge = await _chargeService.CreateAsync(

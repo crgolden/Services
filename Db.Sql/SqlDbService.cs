@@ -12,9 +12,9 @@
 
         public SqlDbService(IOptions<SqlDbOptions> sqlDbOptions)
         {
-            if (sqlDbOptions.Value == default)
+            if (sqlDbOptions?.Value == default)
             {
-                throw new ArgumentNullException(nameof(SqlDbOptions));
+                throw new ArgumentNullException(nameof(sqlDbOptions));
             }
 
             _connectionStringBuilder = new SqlConnectionStringBuilder

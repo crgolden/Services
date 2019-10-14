@@ -5,20 +5,23 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Common;
-    using Microsoft.Extensions.Options;
+    using Microsoft.Extensions.Logging;
     using SmartyStreets;
-    using InternationalLookup = SmartyStreets.InternationalStreetApi.Lookup;
-    using UsLookup = SmartyStreets.USStreetApi.Lookup;
 
     public class SmartyStreetsAddressService : IAddressService
     {
-        private readonly ClientBuilder _clientBuilder;
+        private readonly IClient<SmartyStreets.USStreetApi.Lookup> _usClient;
+        private readonly IClient<SmartyStreets.InternationalStreetApi.Lookup> _internationalClient;
+        private readonly ILogger<SmartyStreetsAddressService> _logger;
 
-        public SmartyStreetsAddressService(IOptions<SmartyStreetsAddressOptions> addressOptions)
+        public SmartyStreetsAddressService(
+            IClient<SmartyStreets.USStreetApi.Lookup> usClient,
+            IClient<SmartyStreets.InternationalStreetApi.Lookup> internationalClient,
+            ILogger<SmartyStreetsAddressService> logger)
         {
-            _clientBuilder = new ClientBuilder(
-                authId: addressOptions.Value.AuthId,
-                authToken: addressOptions.Value.AuthToken);
+            _usClient = usClient;
+            _internationalClient = internationalClient;
+            _logger = logger;
         }
 
         public Task<IEnumerable<Address>> ValidateAsync(
@@ -32,16 +35,15 @@
 
         private IEnumerable<Address> ValidateUsAddress(Address address)
         {
-            var client = _clientBuilder.BuildUsStreetApiClient();
-            var lookup = new UsLookup
+            var lookup = new SmartyStreets.USStreetApi.Lookup
             {
                 Street = address.StreetAddress,
                 City = address.Locality,
                 State = address.Region,
                 ZipCode = address.PostalCode
             };
-            client.Send(lookup);
-            return lookup.Result.Select(candidate => new Address
+            _usClient.Send(lookup);
+            return lookup.Result?.Select(candidate => new Address
             {
                 StreetAddress = candidate.Components.StreetName,
                 Locality = candidate.Components.CityName,
@@ -52,8 +54,7 @@
 
         private IEnumerable<Address> ValidateInternationalAddress(Address address)
         {
-            var client = _clientBuilder.BuildInternationalStreetApiClient();
-            var lookup = new InternationalLookup
+            var lookup = new SmartyStreets.InternationalStreetApi.Lookup
             {
                 Address1 = address.StreetAddress,
                 Locality = address.Locality,
@@ -61,8 +62,8 @@
                 PostalCode = address.PostalCode,
                 Country = address.Country
             };
-            client.Send(lookup);
-            return lookup.Result.Select(candidate => new Address
+            _internationalClient.Send(lookup);
+            return lookup.Result?.Select(candidate => new Address
             {
                 StreetAddress = candidate.Components.ThoroughfareName,
                 Locality = candidate.Components.Locality,

@@ -12,9 +12,9 @@
 
         public OracleDbService(IOptions<OracleDbOptions> oracleDbOptions)
         {
-            if (oracleDbOptions.Value == default)
+            if (oracleDbOptions?.Value == default)
             {
-                throw new ArgumentNullException(nameof(OracleDbOptions));
+                throw new ArgumentNullException(nameof(oracleDbOptions));
             }
 
             _connectionStringBuilder = new OracleConnectionStringBuilder

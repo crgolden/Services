@@ -7,38 +7,53 @@
     using System.Threading.Tasks;
     using Hangfire;
     using Hangfire.Server;
+    using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
-    using static Common.EventIds;
+    using Microsoft.Extensions.Options;
+    using static Common.EventId;
 
     public class HangfireJobService : IHostedService
     {
-        private readonly IBackgroundJobClient _backgroundJobClient;
-        private readonly IRecurringJobManager _recurringJobManager;
+        private readonly IServiceProvider _services;
         private readonly IEnumerable<HangfireJobDetail> _jobDetails;
         private readonly ILogger<HangfireJobService> _logger;
 
         public HangfireJobService(
-            IBackgroundJobClient backgroundJobClient,
-            IRecurringJobManager recurringJobManager,
+            IServiceProvider services,
             IEnumerable<HangfireJobDetail> jobDetails,
+            IOptions<HangfireJobOptions> hangfireJobOptions,
             ILogger<HangfireJobService> logger)
         {
-            _backgroundJobClient = backgroundJobClient;
-            _recurringJobManager = recurringJobManager;
+            GlobalJobFilters.Filters.Add(new ApplyStateFilter(hangfireJobOptions));
+            _services = services;
             _jobDetails = jobDetails;
             _logger = logger;
         }
 
+        public static DateTime? GetCompareDate(PerformContext context, string methodName)
+        {
+            return long.TryParse(context.BackgroundJob.Id, out var currentJobId)
+                ? JobStorage.Current
+                    ?.GetMonitoringApi()
+                    ?.SucceededJobs(0, (int)currentJobId)
+                    ?.LastOrDefault(x => x.Value?.Job?.Method?.Name == methodName).Value?.SucceededAt
+                : default;
+        }
+
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            foreach (var jobDetail in _jobDetails)
+            using (var scope = _services.CreateScope())
             {
-                _recurringJobManager.AddOrUpdate(
-                    recurringJobId: jobDetail.Id,
-                    job: jobDetail.Job,
-                    cronExpression: jobDetail.CronExpression,
-                    options: jobDetail.Options);
+                var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+                foreach (var jobDetail in _jobDetails)
+                {
+                    recurringJobManager.AddOrUpdate(
+                        recurringJobId: jobDetail.Id,
+                        job: jobDetail.Job,
+                        cronExpression: jobDetail.CronExpression,
+                        options: jobDetail.Options);
+                }
             }
 
             _logger.Log(
@@ -51,9 +66,13 @@
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            foreach (var jobDetail in _jobDetails)
+            using (var scope = _services.CreateScope())
             {
-                _recurringJobManager.RemoveIfExists(jobDetail.Id);
+                var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+                foreach (var jobDetail in _jobDetails)
+                {
+                    recurringJobManager.RemoveIfExists(jobDetail.Id);
+                }
             }
 
             _logger.Log(
@@ -62,16 +81,6 @@
                 message: "Hangfire Job Service Stopped at {@Time}",
                 args: new object[] { DateTime.UtcNow });
             return Task.CompletedTask;
-        }
-
-        public static DateTime? GetCompareDate(PerformContext context, string methodName)
-        {
-            return long.TryParse(context.BackgroundJob.Id, out var currentJobId)
-                ? JobStorage.Current
-                    ?.GetMonitoringApi()
-                    ?.SucceededJobs(0, (int)currentJobId)
-                    ?.LastOrDefault(x => x.Value?.Job?.Method?.Name == methodName).Value?.SucceededAt
-                : null;
         }
     }
 }

@@ -1,17 +1,17 @@
 ﻿namespace Services
 {
-    using System;
+    using System.Threading.Tasks;
+    using Quartz;
 
-    public class QuartzJobDetail
+    public abstract class QuartzJobDetail : IJob
     {
-        public readonly Type Type;
-
         public readonly string CronExpression;
 
-        public QuartzJobDetail(Type type, string cronExpression)
+        protected QuartzJobDetail(string cronExpression)
         {
-            Type = type;
             CronExpression = cronExpression;
         }
+
+        public abstract Task Execute(IJobExecutionContext context);
     }
 }

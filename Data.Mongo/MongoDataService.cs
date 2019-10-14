@@ -6,24 +6,27 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Common;
+    using Microsoft.Extensions.Logging;
     using MongoDB.Driver;
 
     public class MongoDataService : IDataService
     {
         private readonly IMongoDatabase _database;
+        private readonly ILogger<MongoDataService> _logger;
 
-        public MongoDataService(IMongoDatabase database) => _database = database;
+        public MongoDataService(
+            IMongoDatabase database,
+            ILogger<MongoDataService> logger)
+        {
+            _database = database;
+            _logger = logger;
+        }
 
         public async Task<T> CreateAsync<T>(
             T document,
             CancellationToken cancellationToken = default)
             where T : class
         {
-            if (document.Equals(default))
-            {
-                throw new ArgumentNullException(nameof(document), "Invalid Document");
-            }
-
             var collection = _database.GetCollection<T>(typeof(T).Name);
             await collection.InsertOneAsync(document, default, cancellationToken).ConfigureAwait(false);
             return document;
@@ -34,11 +37,6 @@
             CancellationToken cancellationToken = default)
             where T : class
         {
-            if (filter.Equals(default))
-            {
-                throw new ArgumentNullException(nameof(filter), "Invalid Filter");
-            }
-
             var collection = _database.GetCollection<T>(typeof(T).Name);
             var cursor = await collection.FindAsync(filter, default, cancellationToken).ConfigureAwait(false);
             return await cursor.SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
@@ -50,16 +48,6 @@
             CancellationToken cancellationToken = default)
             where T : class
         {
-            if (filter.Equals(default))
-            {
-                throw new ArgumentNullException(nameof(filter), "Invalid Filter");
-            }
-
-            if (document.Equals(default))
-            {
-                throw new ArgumentNullException(nameof(document), "Invalid Document");
-            }
-
             var collection = _database.GetCollection<T>(typeof(T).Name);
             await collection.ReplaceOneAsync(filter, document, default, cancellationToken).ConfigureAwait(false);
         }
@@ -69,11 +57,6 @@
             CancellationToken cancellationToken = default)
             where T : class
         {
-            if (filter.Equals(default))
-            {
-                throw new ArgumentNullException(nameof(filter), "Invalid Filter");
-            }
-
             var collection = _database.GetCollection<T>(typeof(T).Name);
             await collection.DeleteOneAsync(filter, default, cancellationToken).ConfigureAwait(false);
         }
