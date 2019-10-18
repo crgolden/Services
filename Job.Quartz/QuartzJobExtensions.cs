@@ -1,5 +1,6 @@
 ﻿namespace Services
 {
+    using System;
     using System.Linq;
     using System.Reflection;
     using Microsoft.Extensions.Configuration;
@@ -11,10 +12,15 @@
 
     public static class QuartzJobExtensions
     {
-        public static IServiceCollection AddQuartz(
+        public static IServiceCollection AddQuartzJobService(
             this IServiceCollection services,
             IConfiguration configuration)
         {
+            if (configuration == default)
+            {
+                throw new ArgumentNullException(nameof(configuration));
+            }
+
             var schedulerFactory = new StdSchedulerFactory();
             var section = configuration.GetSection(nameof(QuartzJobStoreOptions));
             if (section.Exists())

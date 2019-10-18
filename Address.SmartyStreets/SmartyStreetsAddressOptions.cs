@@ -2,8 +2,8 @@
 {
     public class SmartyStreetsAddressOptions
     {
-        public string AuthId { get; set; }
+        public string? AuthId { get; set; }
 
-        public string AuthToken { get; set; }
+        public string? AuthToken { get; set; }
     }
 }

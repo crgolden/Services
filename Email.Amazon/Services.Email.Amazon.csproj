@@ -3,9 +3,10 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <RootNamespace>Services</RootNamespace>
-    <LangVersion>latest</LangVersion>
+    <LangVersion>8.0</LangVersion>
+    <Nullable>enable</Nullable>
     <PackageId>Services.Email.Amazon</PackageId>
-    <Version>1.0.0-beta1</Version>
+    <Version>1.0.0-beta2</Version>
     <Company>crgolden</Company>
     <Authors>Chris Golden</Authors>
     <RepositoryUrl>https://github.com/crgolden/Services</RepositoryUrl>
@@ -15,25 +16,27 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
     <SignAssembly>true</SignAssembly>
-    <PackageIcon>deeprog.ico</PackageIcon>
-    <PackageIconUrl>https://crgolden-ui.azurewebsites.net/favicon.ico</PackageIconUrl>
+    <AssemblyOriginatorKeyFile>..\Services.snk</AssemblyOriginatorKeyFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageIcon>deeprog.png</PackageIcon>
     <RepositoryType>git</RepositoryType>
     <CodeAnalysisRuleSet>..\.ruleset</CodeAnalysisRuleSet>
+    <SkipDefaultEditorConfigAsAdditionalFile>true</SkipDefaultEditorConfigAsAdditionalFile>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="..\deeprog.png" Pack="true" PackagePath="\" />
     <None Remove="..\stylecop.json" />
-    <None Include="..\deeprog.ico" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <ItemGroup>
+    <AdditionalFiles Include="..\.editorconfig" />
     <AdditionalFiles Include="..\stylecop.json" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.SimpleEmail" Version="3.3.101.55" />
-    <PackageReference Include="Common.Abstractions" Version="1.0.0-beta1" />
-    <PackageReference Include="Common.Enums" Version="1.0.0-beta1" />
+    <PackageReference Include="AWSSDK.SimpleEmail" Version="3.3.101.57" />
+    <PackageReference Include="Common.Abstractions" Version="1.0.0-beta5" />
     <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.6">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

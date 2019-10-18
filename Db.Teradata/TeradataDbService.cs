@@ -5,12 +5,13 @@
     using Common;
     using Microsoft.Extensions.Options;
     using Teradata.Client.Provider;
+    using static Common.DbServiceType;
 
     public class TeradataDbService : DbProviderFactory, IDbService
     {
         private readonly TdConnectionStringBuilder _connectionStringBuilder;
 
-        public TeradataDbService(IOptions<TeradataDbOptions> teradataDbOptions)
+        public TeradataDbService(IOptions<TeradataDbOptions>? teradataDbOptions)
         {
             if (teradataDbOptions?.Value == default)
             {
@@ -27,7 +28,9 @@
             };
         }
 
-        public string Provider => "Teradata";
+        public string? Name { get; set; }
+
+        public DbServiceType Type => Teradata;
 
         public override DbCommand CreateCommand() => new TdCommand();
 

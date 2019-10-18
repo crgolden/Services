@@ -12,12 +12,17 @@
     {
         public static IServiceCollection AddAzureStorageService(
             this IServiceCollection services,
-            IConfiguration configuration)
+            IConfiguration? configuration)
         {
+            if (configuration == default)
+            {
+                throw new ArgumentNullException(nameof(configuration));
+            }
+
             var section = configuration.GetSection(nameof(AzureStorageOptions));
             if (!section.Exists())
             {
-                throw new Exception("AzureStorageOptions section doesn't exist");
+                throw new Exception($"{nameof(AzureStorageOptions)} section doesn't exist");
             }
 
             services.Configure<AzureStorageOptions>(section);
@@ -26,7 +31,7 @@
                 string.IsNullOrEmpty(azureStorageOptions.AccountName) ||
                 string.IsNullOrEmpty(azureStorageOptions.AccountKey1))
             {
-                throw new Exception("AzureStorageOptions section is invalid");
+                throw new Exception($"{nameof(AzureStorageOptions)} section is invalid");
             }
 
             services.AddTransient(

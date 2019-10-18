@@ -11,9 +11,13 @@
 
         public readonly string CronExpression;
 
-        public readonly RecurringJobOptions Options;
+        public readonly RecurringJobOptions? Options;
 
-        public HangfireJobDetail(string id, Job job, string cronExpression, RecurringJobOptions options = default)
+        public HangfireJobDetail(
+            string id,
+            Job job,
+            string cronExpression,
+            RecurringJobOptions? options = default)
         {
             Id = id;
             Job = job;

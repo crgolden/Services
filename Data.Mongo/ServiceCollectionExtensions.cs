@@ -9,12 +9,17 @@
     {
         public static IServiceCollection AddMongoDataService(
             this IServiceCollection services,
-            IConfiguration configuration)
+            IConfiguration? configuration)
         {
+            if (configuration == default)
+            {
+                throw new ArgumentNullException(nameof(configuration));
+            }
+
             var section = configuration.GetSection(nameof(MongoDataOptions));
             if (!section.Exists())
             {
-                throw new Exception("MongoDataOptions section doesn't exist");
+                throw new Exception($"{nameof(MongoDataOptions)} section doesn't exist");
             }
 
             services.Configure<MongoDataOptions>(section);
@@ -23,7 +28,7 @@
                 string.IsNullOrEmpty(mongoDataOptions.ConnectionString) ||
                 string.IsNullOrEmpty(mongoDataOptions.DatabaseName))
             {
-                throw new Exception("MongoDataOptions section is invalid");
+                throw new Exception($"{nameof(MongoDataOptions)} section is invalid");
             }
 
             services.AddSingleton<IMongoClient>(

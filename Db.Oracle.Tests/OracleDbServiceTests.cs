@@ -1,10 +1,11 @@
-namespace Services.Db.Oracle.Tests
+﻿namespace Services.Db.Oracle.Tests
 {
     using System;
     using global::Oracle.ManagedDataAccess.Client;
     using Microsoft.Extensions.Options;
     using Moq;
     using Xunit;
+    using static Common.DbServiceType;
 
     public class OracleDbServiceTests
     {
@@ -38,7 +39,21 @@ namespace Services.Db.Oracle.Tests
             var oracleDbService = new OracleDbService(_oracleDbOptions.Object);
 
             // Assert
-            Assert.Equal("Oracle", oracleDbService.Provider);
+            Assert.Equal(Oracle, oracleDbService.Type);
+        }
+
+        [Fact]
+        public void Name()
+        {
+            // Arrange
+            const string name = "TestName";
+            var oracleDbService = new OracleDbService(_oracleDbOptions.Object)
+            {
+                Name = name
+            };
+
+            // Assert
+            Assert.Equal(name, oracleDbService.Name);
         }
 
         [Fact]

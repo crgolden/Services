@@ -10,12 +10,17 @@
     {
         public static IServiceCollection AddAmazonStorageService(
             this IServiceCollection services,
-            IConfiguration configuration)
+            IConfiguration? configuration)
         {
+            if (configuration == default)
+            {
+                throw new ArgumentNullException(nameof(configuration));
+            }
+
             var section = configuration.GetSection(nameof(AmazonStorageOptions));
             if (!section.Exists())
             {
-                throw new Exception("AmazonStorageOptions section doesn't exist");
+                throw new Exception($"{nameof(AmazonStorageOptions)} section doesn't exist");
             }
 
             services.Configure<AmazonStorageOptions>(section);
@@ -24,7 +29,7 @@
                 string.IsNullOrEmpty(amazonStorageOptions.AccessKeyId) ||
                 string.IsNullOrEmpty(amazonStorageOptions.SecretAccessKey))
             {
-                throw new Exception("AmazonStorageOptions section is invalid");
+                throw new Exception($"{nameof(AmazonStorageOptions)} section is invalid");
             }
 
             services.AddTransient<IAmazonS3, AmazonS3Client>(

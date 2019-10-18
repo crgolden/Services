@@ -10,12 +10,17 @@
     {
         public static IServiceCollection AddAmazonEmailService(
             this IServiceCollection services,
-            IConfiguration configuration)
+            IConfiguration? configuration)
         {
+            if (configuration == default)
+            {
+                throw new ArgumentNullException(nameof(configuration));
+            }
+
             var section = configuration.GetSection(nameof(AmazonEmailOptions));
             if (!section.Exists())
             {
-                throw new Exception("AmazonEmailOptions section doesn't exist");
+                throw new Exception($"{nameof(AmazonEmailOptions)} section doesn't exist");
             }
 
             services.Configure<AmazonEmailOptions>(section);
@@ -24,7 +29,7 @@
                 string.IsNullOrEmpty(amazonEmailOptions.AccessKeyId) ||
                 string.IsNullOrEmpty(amazonEmailOptions.SecretAccessKey))
             {
-                throw new Exception("AmazonEmailOptions section is invalid");
+                throw new Exception($"{nameof(AmazonEmailOptions)} section is invalid");
             }
 
             services.AddTransient<IAmazonSimpleEmailService, AmazonSimpleEmailServiceClient>(

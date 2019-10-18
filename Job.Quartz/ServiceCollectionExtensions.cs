@@ -12,13 +12,23 @@
     {
         public static IServiceCollection AddQuartzJobService(
             this IServiceCollection services,
-            IConfiguration configuration,
-            IEnumerable<IJob> quartzJobDetails)
+            IConfiguration? configuration,
+            IEnumerable<IJob>? quartzJobDetails)
         {
+            if (configuration == default)
+            {
+                throw new ArgumentNullException(nameof(configuration));
+            }
+
+            if (quartzJobDetails == null)
+            {
+                throw new ArgumentNullException(nameof(quartzJobDetails));
+            }
+
             var section = configuration.GetSection(nameof(QuartzJobStoreOptions));
             if (!section.Exists())
             {
-                throw new Exception("QuartzJobStoreOptions section doesn't exist");
+                throw new Exception($"{nameof(QuartzJobStoreOptions)} section doesn't exist");
             }
 
             services.Configure<QuartzJobStoreOptions>(section);
@@ -35,7 +45,7 @@
                 string.IsNullOrEmpty(quartzJobStoreOptions.DataSourceProvider) ||
                 string.IsNullOrEmpty(quartzJobStoreOptions.DataSourceConnectionString))
             {
-                throw new Exception("QuartzJobStoreOptions section is invalid");
+                throw new Exception($"{nameof(QuartzJobStoreOptions)} section is invalid");
             }
 
             foreach (var quartzJobDetail in quartzJobDetails)

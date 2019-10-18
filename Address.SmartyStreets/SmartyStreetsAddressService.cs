@@ -1,41 +1,79 @@
 ﻿namespace Services
 {
+    using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Common;
     using Microsoft.Extensions.Logging;
     using SmartyStreets;
+    using static System.DateTime;
+    using static Common.EventId;
+    using static Microsoft.Extensions.Logging.LogLevel;
+    using EventId = Microsoft.Extensions.Logging.EventId;
+    using InternationalLookup = SmartyStreets.InternationalStreetApi.Lookup;
+    using UsLookup = SmartyStreets.USStreetApi.Lookup;
 
     public class SmartyStreetsAddressService : IAddressService
     {
-        private readonly IClient<SmartyStreets.USStreetApi.Lookup> _usClient;
-        private readonly IClient<SmartyStreets.InternationalStreetApi.Lookup> _internationalClient;
+        private readonly IClient<UsLookup> _usClient;
+        private readonly IClient<InternationalLookup> _internationalClient;
         private readonly ILogger<SmartyStreetsAddressService> _logger;
 
+        [SuppressMessage("StyleCop.CSharp.NamingRules", "SA1305:Field names should not use Hungarian notation", Justification = "Lowercased US")]
         public SmartyStreetsAddressService(
-            IClient<SmartyStreets.USStreetApi.Lookup> usClient,
-            IClient<SmartyStreets.InternationalStreetApi.Lookup> internationalClient,
-            ILogger<SmartyStreetsAddressService> logger)
+            IClient<UsLookup>? usClient,
+            IClient<InternationalLookup>? internationalClient,
+            ILogger<SmartyStreetsAddressService>? logger)
         {
-            _usClient = usClient;
-            _internationalClient = internationalClient;
-            _logger = logger;
+            _usClient = usClient ?? throw new ArgumentNullException(nameof(usClient));
+            _internationalClient = internationalClient ?? throw new ArgumentNullException(nameof(internationalClient));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public Task<IEnumerable<Address>> ValidateAsync(
-            Address address,
+            Address? address,
             CancellationToken cancellationToken = default)
         {
-            return new[] { "US", "USA", "CA", "CAN" }.Contains(address.Country)
-                ? Task.FromResult(ValidateUsAddress(address))
-                : Task.FromResult(ValidateInternationalAddress(address));
+            if (address == default)
+            {
+                throw new ArgumentNullException(nameof(address));
+            }
+
+            try
+            {
+                _logger.Log(
+                    logLevel: Information,
+                    eventId: new EventId((int)ValidateStart, $"{ValidateStart}"),
+                    message: "Validating address {@Address} at {@Time}",
+                    args: new object[] { address, UtcNow });
+                var addresses = new[] { "US", "USA", "CA", "CAN" }.Contains(address.Country)
+                    ? ValidateUsAddress(address)
+                    : ValidateInternationalAddress(address);
+                _logger.Log(
+                    logLevel: Information,
+                    eventId: new EventId((int)ValidateEnd, $"{ValidateEnd}"),
+                    message: "Validated address {@Address} with result {@Addresses} at {@Time}",
+                    args: new object[] { address, addresses, UtcNow });
+                return Task.FromResult(addresses);
+            }
+            catch (Exception e)
+            {
+                _logger.Log(
+                    logLevel: Error,
+                    eventId: new EventId((int)ValidateError, $"{ValidateError}"),
+                    exception: e,
+                    message: "Error validating address {@Address} at {@Time}",
+                    args: new object[] { address, UtcNow });
+                throw;
+            }
         }
 
         private IEnumerable<Address> ValidateUsAddress(Address address)
         {
-            var lookup = new SmartyStreets.USStreetApi.Lookup
+            var lookup = new UsLookup
             {
                 Street = address.StreetAddress,
                 City = address.Locality,
@@ -43,18 +81,20 @@
                 ZipCode = address.PostalCode
             };
             _usClient.Send(lookup);
-            return lookup.Result?.Select(candidate => new Address
-            {
-                StreetAddress = candidate.Components.StreetName,
-                Locality = candidate.Components.CityName,
-                Region = candidate.Components.State,
-                PostalCode = candidate.Components.ZipCode
-            });
+            return lookup.Result == default
+                ? Enumerable.Empty<Address>()
+                : lookup.Result.Where(x => x.Components != default).Select(x => new Address
+                {
+                    StreetAddress = x.Components.StreetName,
+                    Locality = x.Components.CityName,
+                    Region = x.Components.State,
+                    PostalCode = x.Components.ZipCode
+                });
         }
 
         private IEnumerable<Address> ValidateInternationalAddress(Address address)
         {
-            var lookup = new SmartyStreets.InternationalStreetApi.Lookup
+            var lookup = new InternationalLookup
             {
                 Address1 = address.StreetAddress,
                 Locality = address.Locality,
@@ -63,14 +103,16 @@
                 Country = address.Country
             };
             _internationalClient.Send(lookup);
-            return lookup.Result?.Select(candidate => new Address
-            {
-                StreetAddress = candidate.Components.ThoroughfareName,
-                Locality = candidate.Components.Locality,
-                Region = candidate.Components.AdministrativeArea,
-                PostalCode = candidate.Components.PostalCode,
-                Country = candidate.Components.CountryIso3
-            });
+            return lookup.Result == default
+                ? Enumerable.Empty<Address>()
+                : lookup.Result.Where(x => x.Components != default).Select(x => new Address
+                {
+                    StreetAddress = x.Components.ThoroughfareName,
+                    Locality = x.Components.Locality,
+                    Region = x.Components.AdministrativeArea,
+                    PostalCode = x.Components.PostalCode,
+                    Country = x.Components.CountryIso3
+                });
         }
     }
 }

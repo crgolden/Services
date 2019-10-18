@@ -1,23 +1,25 @@
 ﻿namespace Services.Models
 {
-    using Newtonsoft.Json;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Text.Json.Serialization;
 
     // https://developer.avalara.com/api-reference/avatax/rest/v2/models/AvaTaxMessage/
+    [ExcludeFromCodeCoverage]
     public class AvaTaxMessage
     {
-        [JsonProperty("summary")]
-        public string Summary { get; set; }
+        [JsonPropertyName("summary")]
+        public string? Summary { get; set; }
 
-        [JsonProperty("details")]
-        public string Details { get; set; }
+        [JsonPropertyName("details")]
+        public string? Details { get; set; }
 
-        [JsonProperty("refersTo")]
-        public string RefersTo { get; set; }
+        [JsonPropertyName("refersTo")]
+        public string? RefersTo { get; set; }
 
-        [JsonProperty("severity")]
-        public string Severity { get; set; }
+        [JsonPropertyName("severity")]
+        public string? Severity { get; set; }
 
-        [JsonProperty("source")]
-        public string Source { get; set; }
+        [JsonPropertyName("source")]
+        public string? Source { get; set; }
     }
 }

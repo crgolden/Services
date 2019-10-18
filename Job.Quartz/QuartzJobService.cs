@@ -10,6 +10,7 @@
     using Microsoft.Extensions.Logging;
     using Quartz;
     using Quartz.Spi;
+    using static System.DateTime;
     using static Common.EventId;
 
     public class QuartzJobService : IHostedService
@@ -19,13 +20,18 @@
         private readonly ILogger<QuartzJobService> _logger;
 
         public QuartzJobService(
-            IServiceProvider services,
-            IEnumerable<IJob> jobDetails,
-            ILogger<QuartzJobService> logger)
+            IServiceProvider? services,
+            IEnumerable<IJob>? jobDetails,
+            ILogger<QuartzJobService>? logger)
         {
-            _services = services;
+            _services = services ?? throw new ArgumentNullException(nameof(services));
+            if (jobDetails == null)
+            {
+                throw new ArgumentNullException(nameof(jobDetails));
+            }
+
             _triggersAndJobs = GetTriggersAndJobs(jobDetails);
-            _logger = logger;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
@@ -40,11 +46,10 @@
                 await scheduler.Start(cancellationToken).ConfigureAwait(false);
             }
 
-            _logger.Log(
-                logLevel: LogLevel.Information,
+            _logger.LogInformation(
                 eventId: new EventId((int)HostedServiceStarted, $"{HostedServiceStarted}"),
                 message: "Quartz Job Service Started at {@Time}",
-                args: new object[] { DateTime.UtcNow });
+                args: new object[] { UtcNow });
         }
 
         public async Task StopAsync(CancellationToken cancellationToken)
@@ -58,11 +63,10 @@
                 await scheduler.Shutdown(cancellationToken).ConfigureAwait(false);
             }
 
-            _logger.Log(
-                logLevel: LogLevel.Information,
+            _logger.LogInformation(
                 eventId: new EventId((int)HostedServiceStopped, $"{HostedServiceStopped}"),
                 message: "Quartz Job Service Stopped at {@Time}",
-                args: new object[] { DateTime.UtcNow });
+                args: new object[] { UtcNow });
         }
 
         private static IReadOnlyDictionary<IJobDetail, IReadOnlyCollection<ITrigger>> GetTriggersAndJobs(

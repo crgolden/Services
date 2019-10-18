@@ -1,10 +1,11 @@
-namespace Services.Db.Sql.Tests
+﻿namespace Services.Db.Sql.Tests
 {
     using System;
     using System.Data.SqlClient;
     using Microsoft.Extensions.Options;
     using Moq;
     using Xunit;
+    using static Common.DbServiceType;
 
     public class SqlDbServiceTests
     {
@@ -38,7 +39,21 @@ namespace Services.Db.Sql.Tests
             var sqlDbService = new SqlDbService(_sqlDbOptions.Object);
 
             // Assert
-            Assert.Equal("Sql", sqlDbService.Provider);
+            Assert.Equal(Sql, sqlDbService.Type);
+        }
+
+        [Fact]
+        public void Name()
+        {
+            // Arrange
+            const string name = "TestName";
+            var sqlDbService = new SqlDbService(_sqlDbOptions.Object)
+            {
+                Name = name
+            };
+
+            // Assert
+            Assert.Equal(name, sqlDbService.Name);
         }
 
         [Fact]

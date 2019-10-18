@@ -1,23 +1,24 @@
 ﻿namespace Services.Models
 {
+    using System.Diagnostics.CodeAnalysis;
+    using System.Text.Json.Serialization;
     using Enums;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
 
     // https://developer.avalara.com/api-reference/avatax/rest/v2/models/TaxAuthorityInfo/
+    [ExcludeFromCodeCoverage]
     public class TaxAuthorityInfo
     {
-        [JsonProperty("avalaraId")]
-        public string AvalaraId { get; set; }
+        [JsonPropertyName("avalaraId")]
+        public string? AvalaraId { get; set; }
 
-        [JsonProperty("jurisdictionName")]
-        public string JurisdictionName { get; set; }
+        [JsonPropertyName("jurisdictionName")]
+        public string? JurisdictionName { get; set; }
 
-        [JsonProperty("jurisdictionType")]
-        [JsonConverter(typeof(StringEnumConverter))]
+        [JsonPropertyName("jurisdictionType")]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public JurisdictionType JurisdictionType { get; set; }
 
-        [JsonProperty("signatureCode")]
-        public string SignatureCode { get; set; }
+        [JsonPropertyName("signatureCode")]
+        public string? SignatureCode { get; set; }
     }
 }

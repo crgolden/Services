@@ -11,12 +11,17 @@
     {
         public static IServiceCollection AddAvalaraAddressService(
             this IServiceCollection services,
-            IConfiguration configuration)
+            IConfiguration? configuration)
         {
+            if (configuration == default)
+            {
+                throw new ArgumentNullException(nameof(configuration));
+            }
+
             var section = configuration.GetSection(nameof(AvalaraAddressOptions));
             if (!section.Exists())
             {
-                throw new Exception("AvalaraAddressOptions section doesn't exist");
+                throw new Exception($"{nameof(AvalaraAddressOptions)} section doesn't exist");
             }
 
             services.Configure<AvalaraAddressOptions>(section);
@@ -25,7 +30,7 @@
                 string.IsNullOrEmpty(avalaraAddressOptions.LicenseKey) ||
                 string.IsNullOrEmpty(avalaraAddressOptions.BaseAddress))
             {
-                throw new Exception("AvalaraAddressOptions section is invalid");
+                throw new Exception($"{nameof(AvalaraAddressOptions)} section is invalid");
             }
 
             services.AddHttpClient(

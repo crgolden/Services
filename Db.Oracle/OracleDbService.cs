@@ -5,12 +5,13 @@
     using Common;
     using Microsoft.Extensions.Options;
     using Oracle.ManagedDataAccess.Client;
+    using static Common.DbServiceType;
 
     public class OracleDbService : DbProviderFactory, IDbService
     {
         private readonly OracleConnectionStringBuilder _connectionStringBuilder;
 
-        public OracleDbService(IOptions<OracleDbOptions> oracleDbOptions)
+        public OracleDbService(IOptions<OracleDbOptions>? oracleDbOptions)
         {
             if (oracleDbOptions?.Value == default)
             {
@@ -25,7 +26,9 @@
             };
         }
 
-        public string Provider => "Oracle";
+        public string? Name { get; set; }
+
+        public DbServiceType Type => Oracle;
 
         public override bool CanCreateDataSourceEnumerator => true;
 

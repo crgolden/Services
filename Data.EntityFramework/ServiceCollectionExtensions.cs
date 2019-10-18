@@ -10,13 +10,18 @@
     {
         public static IServiceCollection AddEntityFrameworkDataService<T>(
             this IServiceCollection services,
-            IConfiguration configuration)
+            IConfiguration? configuration)
             where T : DbContext
         {
+            if (configuration == default)
+            {
+                throw new ArgumentNullException(nameof(configuration));
+            }
+
             var section = configuration.GetSection(nameof(EntityFrameworkDataOptions));
             if (!section.Exists())
             {
-                throw new Exception("EntityFrameworkDataOptions section doesn't exist");
+                throw new Exception($"{nameof(EntityFrameworkDataOptions)} section doesn't exist");
             }
 
             services.Configure<EntityFrameworkDataOptions>(section);
@@ -24,7 +29,7 @@
             if (entityFrameworkDataOptions == default ||
                 !Enum.TryParse<DatabaseType>(entityFrameworkDataOptions.DatabaseType, true, out var databaseType))
             {
-                throw new Exception("EntityFrameworkDataOptions section is invalid");
+                throw new Exception($"{nameof(EntityFrameworkDataOptions)} section is invalid");
             }
 
             var builderAction = GetBuilderAction(databaseType, entityFrameworkDataOptions);
@@ -43,7 +48,7 @@
                 case DatabaseType.SqlServer:
                     if (entityFrameworkDataOptions.SqlServerOptions == default)
                     {
-                        throw new Exception("SqlServerOptions section is invalid");
+                        throw new Exception($"{nameof(SqlServerOptions)} section is invalid");
                     }
 
                     builderAction = builder =>
@@ -72,7 +77,7 @@
                 case DatabaseType.Sqlite:
                     if (entityFrameworkDataOptions.SqliteOptions == default)
                     {
-                        throw new Exception("SqliteOptions section is invalid");
+                        throw new Exception($"{nameof(SqliteOptions)} section is invalid");
                     }
 
                     builderAction = builder =>

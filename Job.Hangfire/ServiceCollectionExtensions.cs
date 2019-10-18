@@ -11,13 +11,23 @@
     {
         public static IServiceCollection AddHangfireJobService(
             this IServiceCollection services,
-            IConfiguration configuration,
-            IEnumerable<HangfireJobDetail> hangfireJobDetails)
+            IConfiguration? configuration,
+            IEnumerable<HangfireJobDetail>? hangfireJobDetails)
         {
+            if (configuration == default)
+            {
+                throw new ArgumentNullException(nameof(configuration));
+            }
+
+            if (hangfireJobDetails == null)
+            {
+                throw new ArgumentNullException(nameof(hangfireJobDetails));
+            }
+
             var section = configuration.GetSection(nameof(HangfireJobOptions));
             if (!section.Exists())
             {
-                throw new Exception("HangfireJobOptions section doesn't exist");
+                throw new Exception($"{nameof(HangfireJobOptions)} section doesn't exist");
             }
 
             services.Configure<HangfireJobOptions>(section);
@@ -25,7 +35,7 @@
             if (hangfireJobOptions == default ||
                 string.IsNullOrEmpty(hangfireJobOptions.ConnectionString))
             {
-                throw new Exception("HangfireJobOptions section is invalid");
+                throw new Exception($"{nameof(HangfireJobOptions)} section is invalid");
             }
 
             foreach (var hangfireJobDetail in hangfireJobDetails)

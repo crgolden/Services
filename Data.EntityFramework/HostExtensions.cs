@@ -1,5 +1,6 @@
 ﻿namespace Services
 {
+    using System;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.EntityFrameworkCore;
@@ -12,9 +13,14 @@
             this IHost host,
             CancellationToken cancellationToken = default)
         {
-            using (var scope = host.Services.CreateScope())
-            using (var context = scope.ServiceProvider.GetRequiredService<DbContext>())
+            if (host == default)
             {
+                throw new ArgumentNullException(nameof(host));
+            }
+
+            using (var scope = host.Services.CreateScope())
+            {
+                await using var context = scope.ServiceProvider.GetRequiredService<DbContext>();
                 await context.Database.MigrateAsync(cancellationToken).ConfigureAwait(false);
             }
 

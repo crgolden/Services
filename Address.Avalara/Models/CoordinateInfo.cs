@@ -1,14 +1,16 @@
 ﻿namespace Services.Models
 {
-    using Newtonsoft.Json;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Text.Json.Serialization;
 
     // https://developer.avalara.com/api-reference/avatax/rest/v2/models/CoordinateInfo/
+    [ExcludeFromCodeCoverage]
     public class CoordinateInfo
     {
-        [JsonProperty("latitude")]
+        [JsonPropertyName("latitude")]
         public double? Latitude { get; set; }
 
-        [JsonProperty("longitude")]
+        [JsonPropertyName("longitude")]
         public double? Longitude { get; set; }
     }
 }

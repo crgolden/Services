@@ -10,12 +10,17 @@
     {
         public static IServiceCollection AddStripePaymentService(
             this IServiceCollection services,
-            IConfiguration configuration)
+            IConfiguration? configuration)
         {
+            if (configuration == default)
+            {
+                throw new ArgumentNullException(nameof(configuration));
+            }
+
             var section = configuration.GetSection(nameof(StripePaymentOptions));
             if (!section.Exists())
             {
-                throw new Exception("StripePaymentOptions section doesn't exist");
+                throw new Exception($"{nameof(StripePaymentOptions)} section doesn't exist");
             }
 
             services.Configure<StripePaymentOptions>(section);
@@ -23,7 +28,7 @@
             if (stripePaymentOptions == default ||
                 string.IsNullOrEmpty(stripePaymentOptions.SecretKey))
             {
-                throw new Exception("StripePaymentOptions section is invalid");
+                throw new Exception($"{nameof(StripePaymentOptions)} section is invalid");
             }
 
             var stripeClient = new StripeClient(stripePaymentOptions.SecretKey);

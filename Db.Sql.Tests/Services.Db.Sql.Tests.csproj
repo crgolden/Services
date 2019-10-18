@@ -2,7 +2,12 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.0</TargetFramework>
+    <LangVersion>8.0</LangVersion>
+    <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <CodeAnalysisRuleSet>..\.ruleset</CodeAnalysisRuleSet>
+    <SkipDefaultEditorConfigAsAdditionalFile>true</SkipDefaultEditorConfigAsAdditionalFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -10,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <AdditionalFiles Include="..\.editorconfig" />
     <AdditionalFiles Include="..\stylecop.json" />
   </ItemGroup>
 

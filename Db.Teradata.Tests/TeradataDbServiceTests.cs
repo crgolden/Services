@@ -1,10 +1,11 @@
-namespace Services.Db.Teradata.Tests
+﻿namespace Services.Db.Teradata.Tests
 {
     using System;
     using global::Teradata.Client.Provider;
     using Microsoft.Extensions.Options;
     using Moq;
     using Xunit;
+    using static Common.DbServiceType;
 
     public class TeradataDbServiceTests
     {
@@ -40,7 +41,21 @@ namespace Services.Db.Teradata.Tests
             var teradataDbService = new TeradataDbService(_teradataDbOptions.Object);
 
             // Assert
-            Assert.Equal("Teradata", teradataDbService.Provider);
+            Assert.Equal(Teradata, teradataDbService.Type);
+        }
+
+        [Fact]
+        public void Name()
+        {
+            // Arrange
+            const string name = "TestName";
+            var teradataDbService = new TeradataDbService(_teradataDbOptions.Object)
+            {
+                Name = name
+            };
+
+            // Assert
+            Assert.Equal(name, teradataDbService.Name);
         }
 
         [Fact]

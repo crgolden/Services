@@ -16,19 +16,34 @@
         private readonly ILogger<AmazonStorageService> _logger;
 
         public AmazonStorageService(
-            IAmazonS3 amazonS3,
-            ILogger<AmazonStorageService> logger)
+            IAmazonS3? amazonS3,
+            ILogger<AmazonStorageService>? logger)
         {
-            _amazonS3 = amazonS3;
-            _logger = logger;
+            _amazonS3 = amazonS3 ?? throw new ArgumentNullException(nameof(amazonS3));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<Uri> Upload(
-            Stream stream,
-            string key,
-            string bucketName,
+            Stream? stream,
+            string? key,
+            string? bucketName,
             CancellationToken cancellationToken = default)
         {
+            if (stream == default)
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
+
+            if (string.IsNullOrEmpty(key))
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            if (string.IsNullOrEmpty(bucketName))
+            {
+                throw new ArgumentNullException(nameof(bucketName));
+            }
+
             var request = new PutObjectRequest
             {
                 BucketName = bucketName,
@@ -40,10 +55,20 @@
         }
 
         public async Task Delete(
-            string key,
-            string bucketName,
+            string? key,
+            string? bucketName,
             CancellationToken cancellationToken = default)
         {
+            if (string.IsNullOrEmpty(key))
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            if (string.IsNullOrEmpty(bucketName))
+            {
+                throw new ArgumentNullException(nameof(bucketName));
+            }
+
             var request = new DeleteObjectRequest
             {
                 BucketName = bucketName,
@@ -53,9 +78,14 @@
         }
 
         public async Task DeleteAll(
-            string bucketName,
+            string? bucketName,
             CancellationToken cancellationToken = default)
         {
+            if (string.IsNullOrEmpty(bucketName))
+            {
+                throw new ArgumentNullException(nameof(bucketName));
+            }
+
             var listObjectsRequest = new ListObjectsV2Request
             {
                 BucketName = bucketName
@@ -67,21 +97,36 @@
                 Objects = objects.S3Objects.Select(s3Object => new KeyVersion
                 {
                     Key = s3Object.Key
-                }).ToList(),
+                }).ToList()
             };
             await _amazonS3.DeleteObjectsAsync(deleteObjectsRequest, cancellationToken).ConfigureAwait(false);
         }
 
         public Uri GetUrl(
-            string key,
-            string bucketName,
-            DateTime expiration)
+            string? key,
+            string? bucketName,
+            DateTime? expiration)
         {
+            if (string.IsNullOrEmpty(key))
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            if (string.IsNullOrEmpty(bucketName))
+            {
+                throw new ArgumentNullException(nameof(bucketName));
+            }
+
+            if (!expiration.HasValue)
+            {
+                throw new ArgumentNullException(nameof(expiration));
+            }
+
             var request = new GetPreSignedUrlRequest
             {
                 BucketName = bucketName,
                 Key = key,
-                Expires = expiration
+                Expires = expiration.Value
             };
             var preSignedUrl = _amazonS3.GetPreSignedURL(request);
             return new Uri(preSignedUrl);

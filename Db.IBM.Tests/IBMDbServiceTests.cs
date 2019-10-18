@@ -1,10 +1,11 @@
-namespace Services.Db.IBM.Tests
+﻿namespace Services.Db.IBM.Tests
 {
     using System;
     using global::IBM.Data.DB2.Core;
     using Microsoft.Extensions.Options;
     using Moq;
     using Xunit;
+    using static Common.DbServiceType;
 
     public class IBMDbServiceTests
     {
@@ -33,13 +34,27 @@ namespace Services.Db.IBM.Tests
         }
 
         [Fact]
-        public void Provider()
+        public void Type()
         {
             // Arrange
             var ibmDbService = new IBMDbService(_ibmDbOptions.Object);
 
             // Assert
-            Assert.Equal("IBM", ibmDbService.Provider);
+            Assert.Equal(IBM, ibmDbService.Type);
+        }
+
+        [Fact]
+        public void Name()
+        {
+            // Arrange
+            const string name = "TestName";
+            var ibmDbService = new IBMDbService(_ibmDbOptions.Object)
+            {
+                Name = name
+            };
+
+            // Assert
+            Assert.Equal(name, ibmDbService.Name);
         }
 
         [Fact]

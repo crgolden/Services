@@ -5,12 +5,13 @@
     using Common;
     using IBM.Data.DB2.Core;
     using Microsoft.Extensions.Options;
+    using static Common.DbServiceType;
 
     public class IBMDbService : DbProviderFactory, IDbService
     {
         private readonly DB2ConnectionStringBuilder _connectionStringBuilder;
 
-        public IBMDbService(IOptions<IBMDbOptions> ibmDbOptions)
+        public IBMDbService(IOptions<IBMDbOptions>? ibmDbOptions)
         {
             if (ibmDbOptions?.Value == default)
             {
@@ -26,7 +27,9 @@
             };
         }
 
-        public string Provider => "IBM";
+        public string? Name { get; set; }
+
+        public DbServiceType Type => IBM;
 
         public override bool CanCreateDataSourceEnumerator => true;
 

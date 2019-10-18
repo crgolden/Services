@@ -10,12 +10,17 @@
     {
         public static IServiceCollection AddSendGridEmailService(
             this IServiceCollection services,
-            IConfiguration configuration)
+            IConfiguration? configuration)
         {
+            if (configuration == default)
+            {
+                throw new ArgumentNullException(nameof(configuration));
+            }
+
             var section = configuration.GetSection(nameof(SendGridEmailOptions));
             if (!section.Exists())
             {
-                throw new Exception("SendGridEmailOptions section doesn't exist");
+                throw new Exception($"{nameof(SendGridEmailOptions)} section doesn't exist");
             }
 
             services.Configure<SendGridClientOptions>(section);
@@ -23,7 +28,7 @@
             if (sendGridEmailOptions == default ||
                 string.IsNullOrEmpty(sendGridEmailOptions.ApiKey))
             {
-                throw new Exception("SendGridEmailOptions section is invalid");
+                throw new Exception($"{nameof(SendGridEmailOptions)} section is invalid");
             }
 
             services.AddTransient<ISendGridClient, SendGridClient>(

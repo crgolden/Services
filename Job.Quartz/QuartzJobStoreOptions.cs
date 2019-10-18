@@ -4,9 +4,9 @@
 
     public class QuartzJobStoreOptions
     {
-        public string InstanceName { get; set; }
+        public string? InstanceName { get; set; }
 
-        public string InstanceId { get; set; }
+        public string? InstanceId { get; set; }
 
         public string Type { get; set; } = "Quartz.Impl.AdoJobStore.JobStoreTX, Quartz";
 
@@ -20,8 +20,8 @@
 
         public string LockHandlerType { get; set; } = StandardLockHandler;
 
-        public string DataSourceProvider { get; set; }
+        public string? DataSourceProvider { get; set; }
 
-        public string DataSourceConnectionString { get; set; }
+        public string? DataSourceConnectionString { get; set; }
     }
 }

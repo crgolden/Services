@@ -5,12 +5,13 @@
     using System.Data.SqlClient;
     using Common;
     using Microsoft.Extensions.Options;
+    using static Common.DbServiceType;
 
     public class SqlDbService : DbProviderFactory, IDbService
     {
         private readonly SqlConnectionStringBuilder _connectionStringBuilder;
 
-        public SqlDbService(IOptions<SqlDbOptions> sqlDbOptions)
+        public SqlDbService(IOptions<SqlDbOptions>? sqlDbOptions)
         {
             if (sqlDbOptions?.Value == default)
             {
@@ -25,7 +26,9 @@
             };
         }
 
-        public string Provider => "Sql";
+        public string? Name { get; set; }
+
+        public DbServiceType Type => Sql;
 
         public override DbCommand CreateCommand() => new SqlCommand();
 
