@@ -6,6 +6,9 @@
     using Hangfire.SqlServer;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
+    using static System.String;
+    using static System.TimeSpan;
+    using static Hangfire.CompatibilityLevel;
 
     public static class ServiceCollectionExtensions
     {
@@ -27,15 +30,19 @@
             var section = configuration.GetSection(nameof(HangfireJobOptions));
             if (!section.Exists())
             {
-                throw new Exception($"{nameof(HangfireJobOptions)} section doesn't exist");
+                throw new ArgumentException(
+                    message: $"{nameof(HangfireJobOptions)} section doesn't exist",
+                    paramName: nameof(configuration));
             }
 
             services.Configure<HangfireJobOptions>(section);
-            var hangfireJobOptions = section.Get<HangfireJobOptions>();
-            if (hangfireJobOptions == default ||
-                string.IsNullOrEmpty(hangfireJobOptions.ConnectionString))
+            var options = section.Get<HangfireJobOptions>();
+            if (options == default ||
+                IsNullOrEmpty(options.ConnectionString))
             {
-                throw new Exception($"{nameof(HangfireJobOptions)} section is invalid");
+                throw new ArgumentException(
+                    message: $"{nameof(HangfireJobOptions)} section is invalid",
+                    paramName: nameof(configuration));
             }
 
             foreach (var hangfireJobDetail in hangfireJobDetails)
@@ -43,17 +50,17 @@
                 services.AddSingleton(hangfireJobDetail);
             }
 
-            services.AddHangfire(options => options
-                    .SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
+            services.AddHangfire(globalConfiguration => globalConfiguration
+                    .SetDataCompatibilityLevel(Version_170)
                     .UseSimpleAssemblyNameTypeSerializer()
                     .UseRecommendedSerializerSettings()
                     .UseSqlServerStorage(
-                        nameOrConnectionString: hangfireJobOptions.ConnectionString,
+                        nameOrConnectionString: options.ConnectionString,
                         options: new SqlServerStorageOptions
                         {
-                            CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
-                            SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
-                            QueuePollInterval = TimeSpan.Zero,
+                            CommandBatchMaxTimeout = FromMinutes(5),
+                            SlidingInvisibilityTimeout = FromMinutes(5),
+                            QueuePollInterval = Zero,
                             UseRecommendedIsolationLevel = true,
                             UsePageLocksOnDequeue = true,
                             DisableGlobalLocks = true

@@ -5,6 +5,7 @@
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Stripe;
+    using static System.String;
 
     public static class ServiceCollectionExtensions
     {
@@ -20,24 +21,26 @@
             var section = configuration.GetSection(nameof(StripePaymentOptions));
             if (!section.Exists())
             {
-                throw new Exception($"{nameof(StripePaymentOptions)} section doesn't exist");
+                throw new ArgumentException(
+                    message: $"{nameof(StripePaymentOptions)} section doesn't exist",
+                    paramName: nameof(configuration));
             }
 
             services.Configure<StripePaymentOptions>(section);
-            var stripePaymentOptions = section.Get<StripePaymentOptions>();
-            if (stripePaymentOptions == default ||
-                string.IsNullOrEmpty(stripePaymentOptions.SecretKey))
+            var options = section.Get<StripePaymentOptions>();
+            if (options == default ||
+                IsNullOrEmpty(options.SecretKey))
             {
-                throw new Exception($"{nameof(StripePaymentOptions)} section is invalid");
+                throw new ArgumentException(
+                    message: $"{nameof(StripePaymentOptions)} section is invalid",
+                    paramName: nameof(configuration));
             }
 
-            var stripeClient = new StripeClient(stripePaymentOptions.SecretKey);
+            var stripeClient = new StripeClient(options.SecretKey);
             services.AddTransient(
-                implementationFactory: sp => new CustomerService(
-                    client: stripeClient));
+                implementationFactory: sp => new CustomerService(stripeClient));
             services.AddTransient(
-                implementationFactory: sp => new ChargeService(
-                    client: stripeClient));
+                implementationFactory: sp => new ChargeService(stripeClient));
             services.AddTransient<IPaymentService, StripePaymentService>();
             return services;
         }

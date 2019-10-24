@@ -7,6 +7,7 @@
     using Teradata.Client.Provider;
     using static Common.DbServiceType;
 
+    /// <inheritdoc cref="IDbService" />
     public class TeradataDbService : DbProviderFactory, IDbService
     {
         private readonly TdConnectionStringBuilder _connectionStringBuilder;
@@ -28,20 +29,28 @@
             };
         }
 
+        /// <inheritdoc />
         public string? Name { get; set; }
 
+        /// <inheritdoc />
         public DbServiceType Type => Teradata;
 
+        /// <inheritdoc cref="IDbService" />
         public override DbCommand CreateCommand() => new TdCommand();
 
+        /// <inheritdoc cref="IDbService" />
         public override DbCommandBuilder CreateCommandBuilder() => new TdCommandBuilder();
 
+        /// <inheritdoc cref="IDbService" />
         public override DbConnection CreateConnection() => new TdConnection(_connectionStringBuilder.ConnectionString);
 
+        /// <inheritdoc cref="IDbService" />
         public override DbConnectionStringBuilder CreateConnectionStringBuilder() => _connectionStringBuilder;
 
+        /// <inheritdoc cref="IDbService" />
         public override DbDataAdapter CreateDataAdapter() => new TdDataAdapter();
 
+        /// <inheritdoc cref="IDbService" />
         public override DbParameter CreateParameter() => new TdParameter();
     }
 }

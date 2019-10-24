@@ -12,8 +12,13 @@
     using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Options;
     using static System.DateTime;
+    using static System.String;
+    using static System.Threading.Tasks.Task;
     using static Common.EventId;
+    using static Hangfire.GlobalJobFilters;
+    using static Hangfire.JobStorage;
 
+    /// <inheritdoc />
     public class HangfireJobService : IHostedService
     {
         private readonly IServiceProvider _services;
@@ -34,7 +39,7 @@
                 throw new ArgumentNullException(nameof(hangfireJobOptions));
             }
 
-            GlobalJobFilters.Filters.Add(new JobExpirationTimeoutAttribute(hangfireJobOptions));
+            Filters.Add(new JobExpirationTimeoutAttribute(hangfireJobOptions));
         }
 
         public static DateTime? GetCompareDate(PerformContext context, string methodName)
@@ -44,19 +49,20 @@
                 throw new ArgumentNullException(nameof(context));
             }
 
-            if (string.IsNullOrEmpty(methodName))
+            if (IsNullOrEmpty(methodName))
             {
                 throw new ArgumentNullException(nameof(methodName));
             }
 
             return long.TryParse(context.BackgroundJob?.Id, out var currentJobId)
-                ? JobStorage.Current
+                ? Current
                     ?.GetMonitoringApi()
                     ?.SucceededJobs(0, (int)currentJobId)
                     ?.LastOrDefault(x => x.Value?.Job?.Method?.Name == methodName).Value?.SucceededAt
                 : default;
         }
 
+        /// <inheritdoc />
         public Task StartAsync(CancellationToken cancellationToken)
         {
             using (var scope = _services.CreateScope())
@@ -73,12 +79,13 @@
             }
 
             _logger.LogInformation(
-                eventId: new EventId((int)HostedServiceStarted, $"{HostedServiceStarted}"),
+                eventId: new EventId((int)HostedServiceStart, $"{HostedServiceStart}"),
                 message: "Hangfire Job Service Started at {@Time}",
                 args: new object[] { UtcNow });
-            return Task.CompletedTask;
+            return CompletedTask;
         }
 
+        /// <inheritdoc />
         public Task StopAsync(CancellationToken cancellationToken)
         {
             using (var scope = _services.CreateScope())
@@ -91,10 +98,10 @@
             }
 
             _logger.LogInformation(
-                eventId: new EventId((int)HostedServiceStopped, $"{HostedServiceStopped}"),
+                eventId: new EventId((int)HostedServiceStop, $"{HostedServiceStop}"),
                 message: "Hangfire Job Service Stopped at {@Time}",
                 args: new object[] { UtcNow });
-            return Task.CompletedTask;
+            return CompletedTask;
         }
     }
 }

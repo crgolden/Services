@@ -5,6 +5,7 @@
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using SmartyStreets;
+    using static System.String;
     using InternationalLookup = SmartyStreets.InternationalStreetApi.Lookup;
     using UsLookup = SmartyStreets.USStreetApi.Lookup;
 
@@ -22,21 +23,25 @@
             var section = configuration.GetSection(nameof(SmartyStreetsAddressOptions));
             if (!section.Exists())
             {
-                throw new Exception($"{nameof(SmartyStreetsAddressOptions)} section doesn't exist");
+                throw new ArgumentException(
+                    message: $"{nameof(SmartyStreetsAddressOptions)} section doesn't exist",
+                    paramName: nameof(configuration));
             }
 
             services.Configure<SmartyStreetsAddressOptions>(section);
-            var smartyStreetsAddressOptions = section.Get<SmartyStreetsAddressOptions>();
-            if (smartyStreetsAddressOptions == default ||
-                string.IsNullOrEmpty(smartyStreetsAddressOptions.AuthId) ||
-                string.IsNullOrEmpty(smartyStreetsAddressOptions.AuthToken))
+            var options = section.Get<SmartyStreetsAddressOptions>();
+            if (options == default ||
+                IsNullOrEmpty(options.AuthId) ||
+                IsNullOrEmpty(options.AuthToken))
             {
-                throw new Exception($"{nameof(SmartyStreetsAddressOptions)} section is invalid");
+                throw new ArgumentException(
+                    message: $"{nameof(SmartyStreetsAddressOptions)} section is invalid",
+                    paramName: nameof(configuration));
             }
 
             var clientBuilder = new ClientBuilder(
-                authId: smartyStreetsAddressOptions.AuthId,
-                authToken: smartyStreetsAddressOptions.AuthToken);
+                authId: options.AuthId,
+                authToken: options.AuthToken);
             services.AddTransient<IClient<UsLookup>>(
                 implementationFactory: sp => clientBuilder.BuildUsStreetApiClient());
             services.AddTransient<IClient<InternationalLookup>>(

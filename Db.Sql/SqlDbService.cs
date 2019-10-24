@@ -7,6 +7,7 @@
     using Microsoft.Extensions.Options;
     using static Common.DbServiceType;
 
+    /// <inheritdoc cref="IDbService" />
     public class SqlDbService : DbProviderFactory, IDbService
     {
         private readonly SqlConnectionStringBuilder _connectionStringBuilder;
@@ -26,20 +27,28 @@
             };
         }
 
+        /// <inheritdoc />
         public string? Name { get; set; }
 
+        /// <inheritdoc />
         public DbServiceType Type => Sql;
 
+        /// <inheritdoc cref="IDbService" />
         public override DbCommand CreateCommand() => new SqlCommand();
 
+        /// <inheritdoc cref="IDbService" />
         public override DbCommandBuilder CreateCommandBuilder() => new SqlCommandBuilder();
 
+        /// <inheritdoc cref="IDbService" />
         public override DbConnection CreateConnection() => new SqlConnection(_connectionStringBuilder.ConnectionString);
 
+        /// <inheritdoc cref="IDbService" />
         public override DbConnectionStringBuilder CreateConnectionStringBuilder() => _connectionStringBuilder;
 
+        /// <inheritdoc cref="IDbService" />
         public override DbDataAdapter CreateDataAdapter() => new SqlDataAdapter();
 
+        /// <inheritdoc cref="IDbService" />
         public override DbParameter CreateParameter() => new SqlParameter();
     }
 }

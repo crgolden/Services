@@ -5,6 +5,7 @@
     using Common;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
+    using static System.String;
 
     public static class ServiceCollectionExtensions
     {
@@ -20,22 +21,26 @@
             var section = configuration.GetSection(nameof(AmazonStorageOptions));
             if (!section.Exists())
             {
-                throw new Exception($"{nameof(AmazonStorageOptions)} section doesn't exist");
+                throw new ArgumentException(
+                    message: $"{nameof(AmazonStorageOptions)} section doesn't exist",
+                    paramName: nameof(configuration));
             }
 
             services.Configure<AmazonStorageOptions>(section);
-            var amazonStorageOptions = section.Get<AmazonStorageOptions>();
-            if (amazonStorageOptions == default ||
-                string.IsNullOrEmpty(amazonStorageOptions.AccessKeyId) ||
-                string.IsNullOrEmpty(amazonStorageOptions.SecretAccessKey))
+            var options = section.Get<AmazonStorageOptions>();
+            if (options == default ||
+                IsNullOrEmpty(options.AccessKeyId) ||
+                IsNullOrEmpty(options.SecretAccessKey))
             {
-                throw new Exception($"{nameof(AmazonStorageOptions)} section is invalid");
+                throw new ArgumentException(
+                    message: $"{nameof(AmazonStorageOptions)} section is invalid",
+                    paramName: nameof(configuration));
             }
 
             services.AddTransient<IAmazonS3, AmazonS3Client>(
                 implementationFactory: sp => new AmazonS3Client(
-                    awsAccessKeyId: amazonStorageOptions.AccessKeyId,
-                    awsSecretAccessKey: amazonStorageOptions.SecretAccessKey));
+                    awsAccessKeyId: options.AccessKeyId,
+                    awsSecretAccessKey: options.SecretAccessKey));
             services.AddTransient<IStorageService, AmazonStorageService>();
             return services;
         }

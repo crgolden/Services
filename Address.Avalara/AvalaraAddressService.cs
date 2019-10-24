@@ -2,19 +2,21 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Net.Http;
     using System.Text;
-    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Common;
     using Microsoft.Extensions.Logging;
     using Models;
     using static System.DateTime;
+    using static System.Linq.Enumerable;
+    using static System.Text.Json.JsonSerializer;
     using static Common.EventId;
+    using static Microsoft.Extensions.Logging.LogLevel;
     using EventId = Microsoft.Extensions.Logging.EventId;
 
+    /// <inheritdoc />
     public class AvalaraAddressService : IAddressService
     {
         private readonly HttpClient _httpClient;
@@ -33,8 +35,10 @@
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+        /// <inheritdoc />
         public async Task<IEnumerable<Address>> ValidateAsync(
             Address? address,
+            LogLevel logLevel = Information,
             CancellationToken cancellationToken = default)
         {
             if (address == default)
@@ -45,8 +49,9 @@
             try
             {
                 AddressResolutionModel addressResolution;
-                _logger.LogInformation(
-                    eventId: new EventId((int)ValidateStart, $"{ValidateStart}"),
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)AddressValidateStart, $"{AddressValidateStart}"),
                     message: "Validating address {@Address} at {@Time}",
                     args: new object[] { address, UtcNow });
                 var stringBuilder = new StringBuilder($"{_httpClient.BaseAddress}/addresses/resolve");
@@ -60,11 +65,11 @@
                 {
                     response.EnsureSuccessStatusCode();
                     var responseString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                    addressResolution = JsonSerializer.Deserialize<AddressResolutionModel>(responseString);
+                    addressResolution = Deserialize<AddressResolutionModel>(responseString);
                 }
 
                 var addresses = addressResolution?.ValidatedAddresses == null
-                    ? Enumerable.Empty<Address>()
+                    ? Empty<Address>()
                     : addressResolution.ValidatedAddresses.Select(validatedAddress => new Address
                     {
                         StreetAddress = $"{validatedAddress.Line1} {validatedAddress.Line2} {validatedAddress.Line3}".TrimEnd(),
@@ -73,8 +78,9 @@
                         PostalCode = validatedAddress.PostalCode,
                         Country = validatedAddress.Country
                     });
-                _logger.LogInformation(
-                    eventId: new EventId((int)ValidateEnd, $"{ValidateEnd}"),
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)AddressValidateEnd, $"{AddressValidateEnd}"),
                     message: "Validated address {@Address} with result {@Addresses} at {@Time}",
                     args: new object[] { address, addresses, UtcNow });
                 return addresses;
@@ -82,7 +88,7 @@
             catch (Exception e)
             {
                 _logger.LogError(
-                    eventId: new EventId((int)ValidateError, $"{ValidateError}"),
+                    eventId: new EventId((int)AddressValidateError, $"{AddressValidateError}"),
                     exception: e,
                     message: "Error validating address {@Address} at {@Time}",
                     args: new object[] { address, UtcNow });

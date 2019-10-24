@@ -9,7 +9,13 @@
     using Amazon.S3.Model;
     using Common;
     using Microsoft.Extensions.Logging;
+    using static System.DateTime;
+    using static System.String;
+    using static Common.EventId;
+    using static Microsoft.Extensions.Logging.LogLevel;
+    using EventId = Microsoft.Extensions.Logging.EventId;
 
+    /// <inheritdoc />
     public class AmazonStorageService : IStorageService
     {
         private readonly IAmazonS3 _amazonS3;
@@ -23,10 +29,12 @@
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+        /// <inheritdoc />
         public async Task<Uri> Upload(
             Stream? stream,
             string? key,
             string? bucketName,
+            LogLevel logLevel = Information,
             CancellationToken cancellationToken = default)
         {
             if (stream == default)
@@ -34,54 +42,108 @@
                 throw new ArgumentNullException(nameof(stream));
             }
 
-            if (string.IsNullOrEmpty(key))
+            if (IsNullOrEmpty(key))
             {
                 throw new ArgumentNullException(nameof(key));
             }
 
-            if (string.IsNullOrEmpty(bucketName))
+            if (IsNullOrEmpty(bucketName))
             {
                 throw new ArgumentNullException(nameof(bucketName));
             }
 
-            var request = new PutObjectRequest
+            var putObjectRequest = new PutObjectRequest
             {
                 BucketName = bucketName,
                 Key = key,
                 InputStream = stream
             };
-            await _amazonS3.PutObjectAsync(request, cancellationToken).ConfigureAwait(false);
-            return new Uri($"https://s3.amazonaws.com/{bucketName}/{key}");
+            try
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)StorageUploadStart, $"{StorageUploadStart}"),
+                    message: "Uploading request {@Request} at {@Time}",
+                    args: new object[] { putObjectRequest, UtcNow });
+                var putObjectResponse = await _amazonS3
+                    .PutObjectAsync(putObjectRequest, cancellationToken)
+                    .ConfigureAwait(false);
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)StorageUploadEnd, $"{StorageUploadEnd}"),
+                    message: "Uploaded request {@Request} with response {@Response} at {@Time}",
+                    args: new object[] { putObjectRequest, putObjectResponse, UtcNow });
+                return new Uri($"https://s3.amazonaws.com/{bucketName}/{key}");
+            }
+            catch (Exception e)
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)StorageUploadError, $"{StorageUploadError}"),
+                    exception: e,
+                    message: "Error uploading request {@Request} at {@Time}",
+                    args: new object[] { putObjectRequest, UtcNow });
+                throw;
+            }
         }
 
+        /// <inheritdoc />
         public async Task Delete(
             string? key,
             string? bucketName,
+            LogLevel logLevel = Information,
             CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(key))
+            if (IsNullOrEmpty(key))
             {
                 throw new ArgumentNullException(nameof(key));
             }
 
-            if (string.IsNullOrEmpty(bucketName))
+            if (IsNullOrEmpty(bucketName))
             {
                 throw new ArgumentNullException(nameof(bucketName));
             }
 
-            var request = new DeleteObjectRequest
+            var deleteObjectRequest = new DeleteObjectRequest
             {
                 BucketName = bucketName,
                 Key = key
             };
-            await _amazonS3.DeleteObjectAsync(request, cancellationToken).ConfigureAwait(false);
+            try
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)StorageRemoveStart, $"{StorageRemoveStart}"),
+                    message: "Removing request {@Request} at {@Time}",
+                    args: new object[] { deleteObjectRequest, UtcNow });
+                var deleteObjectResponse = await _amazonS3
+                    .DeleteObjectAsync(deleteObjectRequest, cancellationToken)
+                    .ConfigureAwait(false);
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)StorageRemoveEnd, $"{StorageRemoveEnd}"),
+                    message: "Removed request {@Request} with response {@Response} at {@Time}",
+                    args: new object[] { deleteObjectRequest, deleteObjectResponse, UtcNow });
+            }
+            catch (Exception e)
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)StorageRemoveError, $"{StorageRemoveError}"),
+                    exception: e,
+                    message: "Error removing request {@Request} at {@Time}",
+                    args: new object[] { deleteObjectRequest, UtcNow });
+                throw;
+            }
         }
 
+        /// <inheritdoc />
         public async Task DeleteAll(
             string? bucketName,
+            LogLevel logLevel = Information,
             CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(bucketName))
+            if (IsNullOrEmpty(bucketName))
             {
                 throw new ArgumentNullException(nameof(bucketName));
             }
@@ -90,29 +152,58 @@
             {
                 BucketName = bucketName
             };
-            var objects = await _amazonS3.ListObjectsV2Async(listObjectsRequest, cancellationToken).ConfigureAwait(false);
+            var listObjectsResponse = await _amazonS3
+                .ListObjectsV2Async(listObjectsRequest, cancellationToken)
+                .ConfigureAwait(false);
             var deleteObjectsRequest = new DeleteObjectsRequest
             {
                 BucketName = bucketName,
-                Objects = objects.S3Objects.Select(s3Object => new KeyVersion
+                Objects = listObjectsResponse.S3Objects.Select(s3Object => new KeyVersion
                 {
                     Key = s3Object.Key
                 }).ToList()
             };
-            await _amazonS3.DeleteObjectsAsync(deleteObjectsRequest, cancellationToken).ConfigureAwait(false);
+            try
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)StorageRemoveAllStart, $"{StorageRemoveAllStart}"),
+                    message: "Removing request {@Request} at {@Time}",
+                    args: new object[] { deleteObjectsRequest, UtcNow });
+                var deleteObjectsResponse = await _amazonS3
+                    .DeleteObjectsAsync(deleteObjectsRequest, cancellationToken)
+                    .ConfigureAwait(false);
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)StorageRemoveAllEnd, $"{StorageRemoveAllEnd}"),
+                    message: "Removed request {@Request} with response {@Response} at {@Time}",
+                    args: new object[] { deleteObjectsRequest, deleteObjectsResponse, UtcNow });
+            }
+            catch (Exception e)
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)StorageRemoveAllError, $"{StorageRemoveAllError}"),
+                    exception: e,
+                    message: "Error removing request {@Request} at {@Time}",
+                    args: new object[] { deleteObjectsRequest, UtcNow });
+                throw;
+            }
         }
 
+        /// <inheritdoc />
         public Uri GetUrl(
             string? key,
             string? bucketName,
-            DateTime? expiration)
+            DateTime? expiration,
+            LogLevel logLevel = Trace)
         {
-            if (string.IsNullOrEmpty(key))
+            if (IsNullOrEmpty(key))
             {
                 throw new ArgumentNullException(nameof(key));
             }
 
-            if (string.IsNullOrEmpty(bucketName))
+            if (IsNullOrEmpty(bucketName))
             {
                 throw new ArgumentNullException(nameof(bucketName));
             }
@@ -122,14 +213,37 @@
                 throw new ArgumentNullException(nameof(expiration));
             }
 
-            var request = new GetPreSignedUrlRequest
+            var getPreSignedUrlRequest = new GetPreSignedUrlRequest
             {
                 BucketName = bucketName,
                 Key = key,
                 Expires = expiration.Value
             };
-            var preSignedUrl = _amazonS3.GetPreSignedURL(request);
-            return new Uri(preSignedUrl);
+            try
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)StorageGetUrlStart, $"{StorageGetUrlStart}"),
+                    message: "Getting request {@Request} at {@Time}",
+                    args: new object[] { getPreSignedUrlRequest, UtcNow });
+                var preSignedUrl = _amazonS3.GetPreSignedURL(getPreSignedUrlRequest);
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)StorageGetUrlEnd, $"{StorageGetUrlEnd}"),
+                    message: "Got request {@Request} with response {@Response} at {@Time}",
+                    args: new object[] { getPreSignedUrlRequest, preSignedUrl, UtcNow });
+                return new Uri(preSignedUrl);
+            }
+            catch (Exception e)
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)StorageGetUrlError, $"{StorageGetUrlError}"),
+                    exception: e,
+                    message: "Error getting request {@Request} at {@Time}",
+                    args: new object[] { getPreSignedUrlRequest, UtcNow });
+                throw;
+            }
         }
     }
 }

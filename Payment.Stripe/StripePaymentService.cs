@@ -6,7 +6,13 @@
     using Common;
     using Microsoft.Extensions.Logging;
     using Stripe;
+    using static System.DateTime;
+    using static System.String;
+    using static Common.EventId;
+    using static Microsoft.Extensions.Logging.LogLevel;
+    using EventId = Microsoft.Extensions.Logging.EventId;
 
+    /// <inheritdoc />
     public class StripePaymentService : IPaymentService
     {
         private readonly CustomerService _customerService;
@@ -23,34 +29,64 @@
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+        /// <inheritdoc />
         public async Task<string?> GetCustomerAsync(
             string? customerId,
+            LogLevel logLevel = Information,
             CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(customerId))
+            if (IsNullOrEmpty(customerId))
             {
                 throw new ArgumentNullException(nameof(customerId));
             }
 
-            var customer = await _customerService.GetAsync(
-                customerId,
-                default,
-                default,
-                cancellationToken).ConfigureAwait(false);
-            return customer?.Id;
+            var customerGetOptions = new CustomerGetOptions();
+            try
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)PaymentGetCustomerStart, $"{PaymentGetCustomerStart}"),
+                    message: "Getting Customer Id {@CustomerId} with options {@Options} at {@Time}",
+                    args: new object[] { customerId, customerGetOptions, UtcNow });
+                var customer = await _customerService
+                    .GetAsync(
+                        customerId: customerId,
+                        options: customerGetOptions,
+                        requestOptions: default,
+                        cancellationToken: cancellationToken)
+                    .ConfigureAwait(false);
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)PaymentGetCustomerEnd, $"{PaymentGetCustomerEnd}"),
+                    message: "Got Customer {@Customer} with options {@Options} at {@Time}",
+                    args: new object[] { customerId, customerGetOptions, UtcNow });
+                return customer?.Id;
+            }
+            catch (Exception e)
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)PaymentGetCustomerError, $"{PaymentGetCustomerError}"),
+                    exception: e,
+                    message: "Error getting Customer Id {@CustomerId} with options {@Options} at {@Time}",
+                    args: new object[] { customerId, customerGetOptions, UtcNow });
+                throw;
+            }
         }
 
+        /// <inheritdoc />
         public virtual async Task<string?> CreateCustomerAsync(
             string? email,
             string? tokenId,
+            LogLevel logLevel = Information,
             CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(email))
+            if (IsNullOrEmpty(email))
             {
                 throw new ArgumentNullException(nameof(email));
             }
 
-            if (string.IsNullOrEmpty(tokenId))
+            if (IsNullOrEmpty(tokenId))
             {
                 throw new ArgumentNullException(nameof(tokenId));
             }
@@ -60,21 +96,48 @@
                 Email = email,
                 Source = tokenId
             };
-            var customer = await _customerService.CreateAsync(
-                customerCreateOptions,
-                default,
-                cancellationToken).ConfigureAwait(false);
-            return customer?.Id;
+            try
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)PaymentCreateCustomerStart, $"{PaymentCreateCustomerStart}"),
+                    message: "Creating Customer Email {@CustomerEmail} with options {@Options} at {@Time}",
+                    args: new object[] { email, customerCreateOptions, UtcNow });
+                var customer = await _customerService
+                    .CreateAsync(
+                        options: customerCreateOptions,
+                        requestOptions: default,
+                        cancellationToken: cancellationToken)
+                    .ConfigureAwait(false);
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)PaymentCreateCustomerEnd, $"{PaymentCreateCustomerEnd}"),
+                    message: "Created Customer {@Customer} with options {@Options} at {@Time}",
+                    args: new object[] { customer, customerCreateOptions, UtcNow });
+                return customer?.Id;
+            }
+            catch (Exception e)
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)PaymentCreateCustomerError, $"{PaymentCreateCustomerError}"),
+                    exception: e,
+                    message: "Error creating Customer Email {@CustomerEmail} with options {@Options} at {@Time}",
+                    args: new object[] { email, customerCreateOptions, UtcNow });
+                throw;
+            }
         }
 
+        /// <inheritdoc />
         public virtual async Task<string?> AuthorizeAsync(
             string? customerId,
             decimal? amount,
             string? currency,
             string? description = default,
+            LogLevel logLevel = Information,
             CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(customerId))
+            if (IsNullOrEmpty(customerId))
             {
                 throw new ArgumentNullException(nameof(customerId));
             }
@@ -84,7 +147,7 @@
                 throw new ArgumentNullException(nameof(amount));
             }
 
-            if (string.IsNullOrEmpty(currency))
+            if (IsNullOrEmpty(currency))
             {
                 throw new ArgumentNullException(nameof(currency));
             }
@@ -97,21 +160,48 @@
                 Customer = customerId,
                 Capture = false
             };
-            var charge = await _chargeService.CreateAsync(
-                chargeCreateOptions,
-                default,
-                cancellationToken).ConfigureAwait(false);
-            return charge?.Id;
+            try
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)PaymentAuthorizeStart, $"{PaymentAuthorizeStart}"),
+                    message: "Authorizing charge with options {@Options} at {@Time}",
+                    args: new object[] { chargeCreateOptions, UtcNow });
+                var charge = await _chargeService
+                    .CreateAsync(
+                        options: chargeCreateOptions,
+                        requestOptions: default,
+                        cancellationToken: cancellationToken)
+                    .ConfigureAwait(false);
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)PaymentAuthorizeEnd, $"{PaymentAuthorizeEnd}"),
+                    message: "Authorized charge {@Charge} with options {@Options} at {@Time}",
+                    args: new object[] { charge, chargeCreateOptions, UtcNow });
+                return charge?.Id;
+            }
+            catch (Exception e)
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)PaymentAuthorizeError, $"{PaymentAuthorizeError}"),
+                    exception: e,
+                    message: "Error authorizing charge with options {@Options} at {@Time}",
+                    args: new object[] { chargeCreateOptions, UtcNow });
+                throw;
+            }
         }
 
+        /// <inheritdoc />
         public virtual async Task<string?> CaptureAsync(
             string? customerId,
             decimal? amount,
             string? currency,
             string? description = default,
+            LogLevel logLevel = Information,
             CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(customerId))
+            if (IsNullOrEmpty(customerId))
             {
                 throw new ArgumentNullException(nameof(customerId));
             }
@@ -121,7 +211,7 @@
                 throw new ArgumentNullException(nameof(amount));
             }
 
-            if (string.IsNullOrEmpty(currency))
+            if (IsNullOrEmpty(currency))
             {
                 throw new ArgumentNullException(nameof(currency));
             }
@@ -134,24 +224,51 @@
                 Customer = customerId,
                 Capture = true
             };
-            var charge = await _chargeService.CreateAsync(
-                chargeCreateOptions,
-                default,
-                cancellationToken).ConfigureAwait(false);
-            return charge?.Id;
+            try
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)PaymentCaptureStart, $"{PaymentCaptureStart}"),
+                    message: "Capturing charge with options {@Options} at {@Time}",
+                    args: new object[] { chargeCreateOptions, UtcNow });
+                var charge = await _chargeService
+                    .CreateAsync(
+                        options: chargeCreateOptions,
+                        requestOptions: default,
+                        cancellationToken: cancellationToken)
+                    .ConfigureAwait(false);
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)PaymentCaptureEnd, $"{PaymentCaptureEnd}"),
+                    message: "Captured charge {@Charge} with options {@Options} at {@Time}",
+                    args: new object[] { charge, chargeCreateOptions, UtcNow });
+                return charge?.Id;
+            }
+            catch (Exception e)
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)PaymentCaptureError, $"{PaymentCaptureError}"),
+                    exception: e,
+                    message: "Error capturing charge with options {@Options} at {@Time}",
+                    args: new object[] { chargeCreateOptions, UtcNow });
+                throw;
+            }
         }
 
+        /// <inheritdoc />
         public virtual async Task UpdateAsync(
             string? chargeId,
             string? description,
+            LogLevel logLevel = Information,
             CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(chargeId))
+            if (IsNullOrEmpty(chargeId))
             {
                 throw new ArgumentNullException(nameof(chargeId));
             }
 
-            if (string.IsNullOrEmpty(description))
+            if (IsNullOrEmpty(description))
             {
                 throw new ArgumentNullException(nameof(description));
             }
@@ -160,11 +277,36 @@
             {
                 Description = description
             };
-            await _chargeService.UpdateAsync(
-                chargeId,
-                chargeUpdateOptions,
-                default,
-                cancellationToken).ConfigureAwait(false);
+            try
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)PaymentUpdateStart, $"{PaymentUpdateStart}"),
+                    message: "Updating charge with options {@Options} at {@Time}",
+                    args: new object[] { chargeUpdateOptions, UtcNow });
+                var charge = await _chargeService
+                    .UpdateAsync(
+                        chargeId: chargeId,
+                        options: chargeUpdateOptions,
+                        requestOptions: default,
+                        cancellationToken: cancellationToken)
+                    .ConfigureAwait(false);
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)PaymentUpdateEnd, $"{PaymentUpdateEnd}"),
+                    message: "Updated charge {@Charge} with options {@Options} at {@Time}",
+                    args: new object[] { charge, chargeUpdateOptions, UtcNow });
+            }
+            catch (Exception e)
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)PaymentUpdateError, $"{PaymentUpdateError}"),
+                    exception: e,
+                    message: "Error updating charge with options {@Options} at {@Time}",
+                    args: new object[] { chargeUpdateOptions, UtcNow });
+                throw;
+            }
         }
     }
 }

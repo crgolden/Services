@@ -1,6 +1,8 @@
 ﻿namespace Services
 {
+    using System.Text.Json.Serialization;
     using Microsoft.Data.SqlClient;
+    using static Microsoft.Data.SqlClient.ApplicationIntent;
 
     // https://docs.microsoft.com/en-us/dotnet/api/system.data.sqlclient.sqlconnectionstringbuilder
     public class SqlServerOptions
@@ -23,6 +25,9 @@
 
         public bool TrustServerCertificate { get; set; }
 
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public ApplicationIntent ApplicationIntent { get; set; } = ReadWrite;
+
         public string? UserId { get; set; }
 
         public string GetConnectionString()
@@ -37,6 +42,7 @@
                 MultipleActiveResultSets = MultipleActiveResultSets,
                 PersistSecurityInfo = PersistSecurityInfo,
                 TrustServerCertificate = TrustServerCertificate,
+                ApplicationIntent = ApplicationIntent
             };
             if (builder.IntegratedSecurity)
             {

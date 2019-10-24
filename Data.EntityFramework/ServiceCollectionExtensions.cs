@@ -5,6 +5,9 @@
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
+    using static System.Enum;
+    using static System.String;
+    using static System.TimeSpan;
 
     public static class ServiceCollectionExtensions
     {
@@ -21,89 +24,92 @@
             var section = configuration.GetSection(nameof(EntityFrameworkDataOptions));
             if (!section.Exists())
             {
-                throw new Exception($"{nameof(EntityFrameworkDataOptions)} section doesn't exist");
+                throw new ArgumentException(
+                    message: $"{nameof(EntityFrameworkDataOptions)} section doesn't exist",
+                    paramName: nameof(configuration));
             }
 
             services.Configure<EntityFrameworkDataOptions>(section);
-            var entityFrameworkDataOptions = section.Get<EntityFrameworkDataOptions>();
-            if (entityFrameworkDataOptions == default ||
-                !Enum.TryParse<DatabaseType>(entityFrameworkDataOptions.DatabaseType, true, out var databaseType))
+            var options = section.Get<EntityFrameworkDataOptions>();
+            if (options == default ||
+                !TryParse<DatabaseType>(options.DatabaseType, true, out var databaseType))
             {
-                throw new Exception($"{nameof(EntityFrameworkDataOptions)} section is invalid");
+                throw new ArgumentException(
+                    message: $"{nameof(EntityFrameworkDataOptions)} section is invalid",
+                    paramName: nameof(configuration));
             }
 
-            var builderAction = GetBuilderAction(databaseType, entityFrameworkDataOptions);
+            var builderAction = GetBuilderAction(databaseType, options);
             services.AddDbContext<T>(builderAction);
             services.AddScoped<DbContext, T>();
             return services;
         }
 
         private static Action<DbContextOptionsBuilder> GetBuilderAction(
-            DatabaseType databaseType,
-            EntityFrameworkDataOptions entityFrameworkDataOptions)
+            DatabaseType? databaseType,
+            EntityFrameworkDataOptions? options)
         {
-            Action<DbContextOptionsBuilder> builderAction;
             switch (databaseType)
             {
                 case DatabaseType.SqlServer:
-                    if (entityFrameworkDataOptions.SqlServerOptions == default)
+                    if (options?.SqlServerOptions == default)
                     {
-                        throw new Exception($"{nameof(SqlServerOptions)} section is invalid");
+                        throw new ArgumentException(
+                            message: $"{nameof(SqlServerOptions)} section is invalid",
+                            paramName: nameof(options));
                     }
 
-                    builderAction = builder =>
+                    return builder =>
                     {
                         builder.UseSqlServer(
-                            connectionString: entityFrameworkDataOptions.SqlServerOptions.GetConnectionString(),
+                            connectionString: options.SqlServerOptions.GetConnectionString(),
                             sqlServerOptionsAction: sqlOptions =>
                             {
                                 sqlOptions.EnableRetryOnFailure(
                                     maxRetryCount: 15,
-                                    maxRetryDelay: TimeSpan.FromSeconds(30),
-                                    errorNumbersToAdd: null);
-                                if (string.IsNullOrEmpty(entityFrameworkDataOptions.AssemblyName))
+                                    maxRetryDelay: FromSeconds(30),
+                                    errorNumbersToAdd: default);
+                                if (IsNullOrEmpty(options.AssemblyName))
                                 {
                                     return;
                                 }
 
-                                sqlOptions.MigrationsAssembly(entityFrameworkDataOptions.AssemblyName);
+                                sqlOptions.MigrationsAssembly(options.AssemblyName);
                             });
-                        if (entityFrameworkDataOptions.UseLazyLoadingProxies)
+                        if (options.UseLazyLoadingProxies)
                         {
                             builder.UseLazyLoadingProxies();
                         }
                     };
-                    break;
                 case DatabaseType.Sqlite:
-                    if (entityFrameworkDataOptions.SqliteOptions == default)
+                    if (options?.SqliteOptions == default)
                     {
-                        throw new Exception($"{nameof(SqliteOptions)} section is invalid");
+                        throw new ArgumentException(
+                            message: $"{nameof(SqliteOptions)} section is invalid",
+                            paramName: nameof(options));
                     }
 
-                    builderAction = builder =>
+                    return builder =>
                     {
                         builder.UseSqlite(
-                            connectionString: entityFrameworkDataOptions.SqliteOptions.GetConnectionString(),
+                            connectionString: options.SqliteOptions.GetConnectionString(),
                             sqliteOptionsAction: sqliteOptions =>
                             {
-                                if (string.IsNullOrEmpty(entityFrameworkDataOptions.AssemblyName))
+                                if (IsNullOrEmpty(options.AssemblyName))
                                 {
                                     return;
                                 }
 
-                                sqliteOptions.MigrationsAssembly(entityFrameworkDataOptions.AssemblyName);
+                                sqliteOptions.MigrationsAssembly(options.AssemblyName);
                             });
-                        if (entityFrameworkDataOptions.UseLazyLoadingProxies)
+                        if (options.UseLazyLoadingProxies)
                         {
                             builder.UseLazyLoadingProxies();
                         }
                     };
-                    break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(databaseType));
             }
-
-            return builderAction;
         }
     }
 }

@@ -2,14 +2,15 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Net.Http;
     using Common;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
-    using Moq;
     using Xunit;
+    using static System.Linq.Enumerable;
+    using static System.StringComparison;
+    using static Moq.Mock;
 
     public class ServiceCollectionExtensionTests
     {
@@ -31,13 +32,17 @@
             // Arrange
             var services = new ServiceCollection();
             var configuration = new ConfigurationBuilder()
-                .AddInMemoryCollection(Enumerable.Empty<KeyValuePair<string, string>>())
+                .AddInMemoryCollection(Empty<KeyValuePair<string, string>>())
                 .Build();
             object TestCode() => services.AddAvalaraAddressService(configuration);
 
             // Act / Assert
-            var exception = Assert.Throws<Exception>(TestCode);
-            Assert.Equal($"{nameof(AvalaraAddressOptions)} section doesn't exist", exception.Message);
+            var exception = Assert.Throws<ArgumentException>(TestCode);
+            Assert.Contains(
+                expectedSubstring: $"{nameof(AvalaraAddressOptions)} section doesn't exist",
+                actualString: exception.Message,
+                comparisonType: CurrentCulture);
+            Assert.Equal("configuration", exception.ParamName);
         }
 
         [Fact]
@@ -57,8 +62,12 @@
             object TestCode() => services.AddAvalaraAddressService(configuration);
 
             // Act / Assert
-            var exception = Assert.Throws<Exception>(TestCode);
-            Assert.Equal($"{nameof(AvalaraAddressOptions)} section is invalid", exception.Message);
+            var exception = Assert.Throws<ArgumentException>(TestCode);
+            Assert.Contains(
+                expectedSubstring: $"{nameof(AvalaraAddressOptions)} section is invalid",
+                actualString: exception.Message,
+                comparisonType: CurrentCulture);
+            Assert.Equal("configuration", exception.ParamName);
         }
 
         [Fact]
@@ -75,7 +84,7 @@
                 })
                 .Build();
             var services = new ServiceCollection();
-            services.AddSingleton(Mock.Of<ILogger<AvalaraAddressService>>());
+            services.AddSingleton(Of<ILogger<AvalaraAddressService>>());
 
             // Act
             var response = services.AddAvalaraAddressService(configuration);

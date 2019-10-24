@@ -7,6 +7,7 @@
     using Quartz;
     using Quartz.Impl;
     using Quartz.Spi;
+    using static System.String;
 
     public static class ServiceCollectionExtensions
     {
@@ -28,24 +29,28 @@
             var section = configuration.GetSection(nameof(QuartzJobStoreOptions));
             if (!section.Exists())
             {
-                throw new Exception($"{nameof(QuartzJobStoreOptions)} section doesn't exist");
+                throw new ArgumentException(
+                    message: $"{nameof(QuartzJobStoreOptions)} section doesn't exist",
+                    paramName: nameof(configuration));
             }
 
             services.Configure<QuartzJobStoreOptions>(section);
-            var quartzJobStoreOptions = section.Get<QuartzJobStoreOptions>();
-            if (quartzJobStoreOptions == default ||
-                string.IsNullOrEmpty(quartzJobStoreOptions.InstanceName) ||
-                string.IsNullOrEmpty(quartzJobStoreOptions.InstanceId) ||
-                string.IsNullOrEmpty(quartzJobStoreOptions.Type) ||
-                string.IsNullOrEmpty(quartzJobStoreOptions.DriverDelegateType) ||
-                string.IsNullOrEmpty(quartzJobStoreOptions.DataSource) ||
-                string.IsNullOrEmpty(quartzJobStoreOptions.TablePrefix) ||
-                string.IsNullOrEmpty(quartzJobStoreOptions.UseProperties) ||
-                string.IsNullOrEmpty(quartzJobStoreOptions.LockHandlerType) ||
-                string.IsNullOrEmpty(quartzJobStoreOptions.DataSourceProvider) ||
-                string.IsNullOrEmpty(quartzJobStoreOptions.DataSourceConnectionString))
+            var options = section.Get<QuartzJobStoreOptions>();
+            if (options == default ||
+                IsNullOrEmpty(options.InstanceName) ||
+                IsNullOrEmpty(options.InstanceId) ||
+                IsNullOrEmpty(options.Type) ||
+                IsNullOrEmpty(options.DriverDelegateType) ||
+                IsNullOrEmpty(options.DataSource) ||
+                IsNullOrEmpty(options.TablePrefix) ||
+                IsNullOrEmpty(options.UseProperties) ||
+                IsNullOrEmpty(options.LockHandlerType) ||
+                IsNullOrEmpty(options.DataSourceProvider) ||
+                IsNullOrEmpty(options.DataSourceConnectionString))
             {
-                throw new Exception($"{nameof(QuartzJobStoreOptions)} section is invalid");
+                throw new ArgumentException(
+                    message: $"{nameof(QuartzJobStoreOptions)} section is invalid",
+                    paramName: nameof(configuration));
             }
 
             foreach (var quartzJobDetail in quartzJobDetails)

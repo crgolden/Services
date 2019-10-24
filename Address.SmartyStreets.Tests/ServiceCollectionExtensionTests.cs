@@ -2,14 +2,16 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using Common;
     using global::SmartyStreets;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
-    using Moq;
     using Xunit;
+    using static System.Linq.Enumerable;
+    using static System.StringComparison;
+    using static Moq.Mock;
+    using static Xunit.Assert;
     using InternationalClient = global::SmartyStreets.InternationalStreetApi.Client;
     using InternationalLookup = global::SmartyStreets.InternationalStreetApi.Lookup;
     using UsClient = global::SmartyStreets.USStreetApi.Client;
@@ -25,8 +27,8 @@
             object TestCode() => services.AddSmartyStreetsAddressService(default);
 
             // Act / Assert
-            var exception = Assert.Throws<ArgumentNullException>(TestCode);
-            Assert.Equal("configuration", exception.ParamName);
+            var exception = Throws<ArgumentNullException>(TestCode);
+            Equal("configuration", exception.ParamName);
         }
 
         [Fact]
@@ -35,13 +37,14 @@
             // Arrange
             var services = new ServiceCollection();
             var configuration = new ConfigurationBuilder()
-                .AddInMemoryCollection(Enumerable.Empty<KeyValuePair<string, string>>())
+                .AddInMemoryCollection(Empty<KeyValuePair<string, string>>())
                 .Build();
             object TestCode() => services.AddSmartyStreetsAddressService(configuration);
 
             // Act / Assert
-            var exception = Assert.Throws<Exception>(TestCode);
-            Assert.Equal($"{nameof(SmartyStreetsAddressOptions)} section doesn't exist", exception.Message);
+            var exception = Throws<ArgumentException>(TestCode);
+            Contains($"{nameof(SmartyStreetsAddressOptions)} section doesn't exist", exception.Message, CurrentCulture);
+            Equal("configuration", exception.ParamName);
         }
 
         [Theory]
@@ -67,8 +70,9 @@
             object TestCode() => services.AddSmartyStreetsAddressService(configuration);
 
             // Act / Assert
-            var exception = Assert.Throws<Exception>(TestCode);
-            Assert.Equal($"{nameof(SmartyStreetsAddressOptions)} section is invalid", exception.Message);
+            var exception = Throws<ArgumentException>(TestCode);
+            Contains($"{nameof(SmartyStreetsAddressOptions)} section is invalid", exception.Message, CurrentCulture);
+            Equal("configuration", exception.ParamName);
         }
 
         [Fact]
@@ -89,7 +93,7 @@
                 })
                 .Build();
             var services = new ServiceCollection();
-            services.AddSingleton(Mock.Of<ILogger<SmartyStreetsAddressService>>());
+            services.AddSingleton(Of<ILogger<SmartyStreetsAddressService>>());
 
             // Act
             var response = services.AddSmartyStreetsAddressService(configuration);
@@ -97,11 +101,11 @@
             // Assert
             using var provider = response.BuildServiceProvider();
             var usClient = provider.GetRequiredService<IClient<UsLookup>>();
-            Assert.IsType<UsClient>(usClient);
+            IsType<UsClient>(usClient);
             var internationalClient = provider.GetRequiredService<IClient<InternationalLookup>>();
-            Assert.IsType<InternationalClient>(internationalClient);
+            IsType<InternationalClient>(internationalClient);
             var addressService = provider.GetRequiredService<IAddressService>();
-            Assert.IsType<SmartyStreetsAddressService>(addressService);
+            IsType<SmartyStreetsAddressService>(addressService);
         }
     }
 }

@@ -3,6 +3,7 @@
     using System.Threading.Tasks;
     using Quartz;
 
+    /// <inheritdoc />
     public abstract class QuartzJobDetail : IJob
     {
         public readonly string CronExpression;
@@ -12,6 +13,7 @@
             CronExpression = cronExpression;
         }
 
+        /// <inheritdoc />
         public abstract Task Execute(IJobExecutionContext context);
     }
 }

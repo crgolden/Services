@@ -6,6 +6,7 @@
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using static System.Net.Mime.MediaTypeNames.Application;
+    using static System.String;
 
     public static class ServiceCollectionExtensions
     {
@@ -21,16 +22,20 @@
             var section = configuration.GetSection(nameof(AvalaraAddressOptions));
             if (!section.Exists())
             {
-                throw new Exception($"{nameof(AvalaraAddressOptions)} section doesn't exist");
+                throw new ArgumentException(
+                    message: $"{nameof(AvalaraAddressOptions)} section doesn't exist",
+                    paramName: nameof(configuration));
             }
 
             services.Configure<AvalaraAddressOptions>(section);
-            var avalaraAddressOptions = section.Get<AvalaraAddressOptions>();
-            if (avalaraAddressOptions == default ||
-                string.IsNullOrEmpty(avalaraAddressOptions.LicenseKey) ||
-                string.IsNullOrEmpty(avalaraAddressOptions.BaseAddress))
+            var options = section.Get<AvalaraAddressOptions>();
+            if (options == default ||
+                IsNullOrEmpty(options.LicenseKey) ||
+                IsNullOrEmpty(options.BaseAddress))
             {
-                throw new Exception($"{nameof(AvalaraAddressOptions)} section is invalid");
+                throw new ArgumentException(
+                    message: $"{nameof(AvalaraAddressOptions)} section is invalid",
+                    paramName: nameof(configuration));
             }
 
             services.AddHttpClient(
@@ -39,8 +44,8 @@
                 {
                     httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
                         scheme: "Basic",
-                        parameter: avalaraAddressOptions.LicenseKey);
-                    httpClient.BaseAddress = new Uri(avalaraAddressOptions.BaseAddress);
+                        parameter: options.LicenseKey);
+                    httpClient.BaseAddress = new Uri(options.BaseAddress);
                     httpClient.DefaultRequestHeaders.Accept.Clear();
                     httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(Json));
                 });

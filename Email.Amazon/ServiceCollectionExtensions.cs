@@ -5,6 +5,7 @@
     using Common;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
+    using static System.String;
 
     public static class ServiceCollectionExtensions
     {
@@ -20,22 +21,26 @@
             var section = configuration.GetSection(nameof(AmazonEmailOptions));
             if (!section.Exists())
             {
-                throw new Exception($"{nameof(AmazonEmailOptions)} section doesn't exist");
+                throw new ArgumentException(
+                    message: $"{nameof(AmazonEmailOptions)} section doesn't exist",
+                    paramName: nameof(configuration));
             }
 
             services.Configure<AmazonEmailOptions>(section);
-            var amazonEmailOptions = section.Get<AmazonEmailOptions>();
-            if (amazonEmailOptions == default ||
-                string.IsNullOrEmpty(amazonEmailOptions.AccessKeyId) ||
-                string.IsNullOrEmpty(amazonEmailOptions.SecretAccessKey))
+            var options = section.Get<AmazonEmailOptions>();
+            if (options == default ||
+                IsNullOrEmpty(options.AccessKeyId) ||
+                IsNullOrEmpty(options.SecretAccessKey))
             {
-                throw new Exception($"{nameof(AmazonEmailOptions)} section is invalid");
+                throw new ArgumentException(
+                    message: $"{nameof(AmazonEmailOptions)} section is invalid",
+                    paramName: nameof(configuration));
             }
 
             services.AddTransient<IAmazonSimpleEmailService, AmazonSimpleEmailServiceClient>(
                 implementationFactory: sp => new AmazonSimpleEmailServiceClient(
-                    awsAccessKeyId: amazonEmailOptions.AccessKeyId,
-                    awsSecretAccessKey: amazonEmailOptions.SecretAccessKey));
+                    awsAccessKeyId: options.AccessKeyId,
+                    awsSecretAccessKey: options.SecretAccessKey));
             services.AddTransient<IEmailService, AmazonEmailService>();
             return services;
         }

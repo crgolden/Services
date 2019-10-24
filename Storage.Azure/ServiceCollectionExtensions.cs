@@ -7,6 +7,7 @@
     using Microsoft.Azure.Storage.Blob;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
+    using static System.String;
 
     public static class ServiceCollectionExtensions
     {
@@ -22,24 +23,28 @@
             var section = configuration.GetSection(nameof(AzureStorageOptions));
             if (!section.Exists())
             {
-                throw new Exception($"{nameof(AzureStorageOptions)} section doesn't exist");
+                throw new ArgumentException(
+                    message: $"{nameof(AzureStorageOptions)} section doesn't exist",
+                    paramName: nameof(configuration));
             }
 
             services.Configure<AzureStorageOptions>(section);
-            var azureStorageOptions = section.Get<AzureStorageOptions>();
-            if (azureStorageOptions == default ||
-                string.IsNullOrEmpty(azureStorageOptions.AccountName) ||
-                string.IsNullOrEmpty(azureStorageOptions.AccountKey1))
+            var options = section.Get<AzureStorageOptions>();
+            if (options == default ||
+                IsNullOrEmpty(options.AccountName) ||
+                (IsNullOrEmpty(options.AccountKey1) && IsNullOrEmpty(options.AccountKey2)))
             {
-                throw new Exception($"{nameof(AzureStorageOptions)} section is invalid");
+                throw new ArgumentException(
+                    message: $"{nameof(AzureStorageOptions)} section is invalid",
+                    paramName: nameof(configuration));
             }
 
             services.AddTransient(
                 implementationFactory: sp =>
                 {
                     var storageCredentials = new StorageCredentials(
-                        accountName: azureStorageOptions.AccountName,
-                        keyValue: azureStorageOptions.AccountKey1);
+                        accountName: options.AccountName,
+                        keyValue: options.AccountKey1 ?? options.AccountKey2);
                     var storageAccount = new CloudStorageAccount(
                         storageCredentials: storageCredentials,
                         useHttps: true);

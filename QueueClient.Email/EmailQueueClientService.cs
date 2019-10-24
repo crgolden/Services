@@ -15,6 +15,7 @@
     using static Microsoft.Azure.ServiceBus.TransportType;
     using EventId = Microsoft.Extensions.Logging.EventId;
 
+    /// <inheritdoc cref="IHostedService" />
     public class EmailQueueClientService : QueueClient, IHostedService
     {
         private readonly IEmailService _emailService;
@@ -41,10 +42,11 @@
                 throw new ArgumentNullException(nameof(hostApplicationLifetime));
             }
 
-            hostApplicationLifetime?.ApplicationStarted.Register(OnStarted);
-            hostApplicationLifetime?.ApplicationStopping.Register(OnStopping);
+            hostApplicationLifetime.ApplicationStarted.Register(OnStarted);
+            hostApplicationLifetime.ApplicationStopping.Register(OnStopping);
         }
 
+        /// <inheritdoc />
         public Task StartAsync(CancellationToken cancellationToken)
         {
             RegisterMessageHandler(
@@ -56,6 +58,7 @@
             return CompletedTask;
         }
 
+        /// <inheritdoc />
         public Task StopAsync(CancellationToken cancellationToken)
         {
             return CloseAsync();
@@ -64,7 +67,7 @@
         private void OnStarted()
         {
             _logger.LogInformation(
-                eventId: new EventId((int)QueueClientStart, $"{QueueClientStart}"),
+                eventId: new EventId((int)HostedServiceStart, $"{HostedServiceStart}"),
                 message: "Email queue client starting at {Time}",
                 args: new object[] { UtcNow });
         }
@@ -72,7 +75,7 @@
         private void OnStopping()
         {
             _logger.LogInformation(
-                eventId: new EventId((int)QueueClientStop, $"{QueueClientStop}"),
+                eventId: new EventId((int)HostedServiceStop, $"{HostedServiceStop}"),
                 message: "Email queue client stopping at {Time}",
                 args: new object[] { UtcNow });
         }

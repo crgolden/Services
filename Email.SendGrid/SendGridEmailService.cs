@@ -10,9 +10,12 @@
     using SendGrid;
     using SendGrid.Helpers.Mail;
     using static System.DateTime;
+    using static System.String;
     using static Common.EventId;
+    using static Microsoft.Extensions.Logging.LogLevel;
     using EventId = Microsoft.Extensions.Logging.EventId;
 
+    /// <inheritdoc />
     public class SendGridEmailService : IEmailService
     {
         private readonly ISendGridClient _sendGridClient;
@@ -26,15 +29,17 @@
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+        /// <inheritdoc />
         public async Task SendEmailAsync(
             string? source,
             IEnumerable<string>? destinations,
             string? subject,
             string? htmlBody,
             string? textBody = default,
+            LogLevel logLevel = Information,
             CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(source))
+            if (IsNullOrEmpty(source))
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -45,22 +50,22 @@
             }
 
             var recipients = destinations.ToArray();
-            if (recipients.Any())
+            if (!recipients.Any())
             {
                 throw new ArgumentException("No recipients.", nameof(destinations));
             }
 
-            if (string.IsNullOrEmpty(subject))
+            if (IsNullOrEmpty(subject))
             {
                 throw new ArgumentNullException(nameof(subject));
             }
 
-            if (string.IsNullOrEmpty(htmlBody))
+            if (IsNullOrEmpty(htmlBody))
             {
                 throw new ArgumentNullException(nameof(htmlBody));
             }
 
-            var msg = new SendGridMessage
+            var message = new SendGridMessage
             {
                 From = new EmailAddress(source),
                 Subject = subject,
@@ -69,17 +74,20 @@
             };
             foreach (var recipient in recipients)
             {
-                msg.AddTo(new EmailAddress(recipient));
+                message.AddTo(new EmailAddress(recipient));
             }
 
             // Disable click tracking.
             // See https://sendgrid.com/docs/User_Guide/Settings/tracking.html
-            msg.SetClickTracking(false, false);
-            await _sendGridClient.SendEmailAsync(msg, cancellationToken).ConfigureAwait(false);
-            _logger.LogInformation(
+            message.SetClickTracking(false, false);
+            var response = await _sendGridClient
+                .SendEmailAsync(message, cancellationToken)
+                .ConfigureAwait(false);
+            _logger.Log(
+                logLevel: logLevel,
                 eventId: new EventId((int)EmailSent, $"{EmailSent}"),
-                message: "Email {@Body} sent at {@Time}",
-                args: new object[] { htmlBody, UtcNow });
+                message: "Email message {@Message} sent with response {@Response} at {@Time}",
+                args: new object[] { message, response, UtcNow });
         }
     }
 }

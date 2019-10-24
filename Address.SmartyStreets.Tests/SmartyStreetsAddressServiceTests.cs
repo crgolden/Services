@@ -9,7 +9,8 @@
     using Xunit;
     using static Common.EventId;
     using static Microsoft.Extensions.Logging.LogLevel;
-    using EventId = Microsoft.Extensions.Logging.EventId;
+    using static Moq.Mock;
+    using static Moq.Times;
     using InternationalCandidate = global::SmartyStreets.InternationalStreetApi.Candidate;
     using InternationalComponents = global::SmartyStreets.InternationalStreetApi.Components;
     using InternationalLookup = global::SmartyStreets.InternationalStreetApi.Lookup;
@@ -23,8 +24,8 @@
         public void ThrowsForNullUsClient()
         {
             // Arrange
-            var internationalClient = Mock.Of<IClient<InternationalLookup>>();
-            var logger = Mock.Of<ILogger<SmartyStreetsAddressService>>();
+            var internationalClient = Of<IClient<InternationalLookup>>();
+            var logger = Of<ILogger<SmartyStreetsAddressService>>();
             object TestCode() => new SmartyStreetsAddressService(default, internationalClient, logger);
 
             // Act / Assert
@@ -36,8 +37,8 @@
         public void ThrowsForNullInternationalClient()
         {
             // Arrange
-            var usClient = Mock.Of<IClient<UsLookup>>();
-            var logger = Mock.Of<ILogger<SmartyStreetsAddressService>>();
+            var usClient = Of<IClient<UsLookup>>();
+            var logger = Of<ILogger<SmartyStreetsAddressService>>();
             object TestCode() => new SmartyStreetsAddressService(usClient, default, logger);
 
             // Act / Assert
@@ -49,8 +50,8 @@
         public void ThrowsForNullLogger()
         {
             // Arrange
-            var usClient = Mock.Of<IClient<UsLookup>>();
-            var internationalClient = Mock.Of<IClient<InternationalLookup>>();
+            var usClient = Of<IClient<UsLookup>>();
+            var internationalClient = Of<IClient<InternationalLookup>>();
             object TestCode() => new SmartyStreetsAddressService(usClient, internationalClient, default);
 
             // Act / Assert
@@ -62,11 +63,11 @@
         public async Task ValidateAsyncThrowsForNullAddress()
         {
             // Arrange
-            var usClient = Mock.Of<IClient<UsLookup>>();
-            var internationalClient = Mock.Of<IClient<InternationalLookup>>();
-            var logger = Mock.Of<ILogger<SmartyStreetsAddressService>>();
+            var usClient = Of<IClient<UsLookup>>();
+            var internationalClient = Of<IClient<InternationalLookup>>();
+            var logger = Of<ILogger<SmartyStreetsAddressService>>();
             var service = new SmartyStreetsAddressService(usClient, internationalClient, logger);
-            async Task TestCode() => await service.ValidateAsync(default).ConfigureAwait(false);
+            Task TestCode() => service.ValidateAsync(default);
 
             // Act // Assert
             var exception = await Assert.ThrowsAsync<ArgumentNullException>(TestCode).ConfigureAwait(false);
@@ -97,7 +98,7 @@
             };
             var usClient = new Mock<IClient<UsLookup>>();
             usClient
-                .Setup(x => x.Send(It.Is<UsLookup>(y => y.Street == address.StreetAddress &&
+                .Setup(x => x.Send(It.Is<UsLookup>(y => y.Street == address.StreetAddress &
                                                         y.City == address.Locality &&
                                                         y.State == address.Region &&
                                                         y.ZipCode == address.PostalCode)))
@@ -115,23 +116,9 @@
             Assert.Equal(candidate.Components.CityName, result?.Locality);
             Assert.Equal(candidate.Components.State, result?.Region);
             Assert.Equal(candidate.Components.ZipCode, result?.PostalCode);
-            internationalClient.Verify(x => x.Send(It.IsAny<InternationalLookup>()), Times.Never);
-            logger.Verify(
-                x => x.Log(
-                    Information,
-                    It.Is<EventId>(y => y.Id == (int)ValidateStart && y.Name == $"{ValidateStart}"),
-                    It.IsAny<It.IsAnyType>(),
-                    null,
-                    (Func<It.IsAnyType, Exception, string>)It.IsAny<object>()),
-                Times.Once);
-            logger.Verify(
-                x => x.Log(
-                    Information,
-                    It.Is<EventId>(y => y.Id == (int)ValidateEnd && y.Name == $"{ValidateEnd}"),
-                    It.IsAny<It.IsAnyType>(),
-                    null,
-                    (Func<It.IsAnyType, Exception, string>)It.IsAny<object>()),
-                Times.Once);
+            internationalClient.Verify(x => x.Send(It.IsAny<InternationalLookup>()), Never);
+            logger.As<ILogger>().Verify(AddressValidateStart.IsLoggedWith(Information), Once);
+            logger.As<ILogger>().Verify(AddressValidateEnd.IsLoggedWith(Information), Once);
         }
 
         [Fact]
@@ -179,23 +166,9 @@
             Assert.Equal(candidate.Components.AdministrativeArea, result?.Region);
             Assert.Equal(candidate.Components.PostalCode, result?.PostalCode);
             Assert.Equal(candidate.Components.CountryIso3, result?.Country);
-            usClient.Verify(x => x.Send(It.IsAny<UsLookup>()), Times.Never);
-            logger.Verify(
-                x => x.Log(
-                    Information,
-                    It.Is<EventId>(y => y.Id == (int)ValidateStart && y.Name == $"{ValidateStart}"),
-                    It.IsAny<It.IsAnyType>(),
-                    null,
-                    (Func<It.IsAnyType, Exception, string>)It.IsAny<object>()),
-                Times.Once);
-            logger.Verify(
-                x => x.Log(
-                    Information,
-                    It.Is<EventId>(y => y.Id == (int)ValidateEnd && y.Name == $"{ValidateEnd}"),
-                    It.IsAny<It.IsAnyType>(),
-                    null,
-                    (Func<It.IsAnyType, Exception, string>)It.IsAny<object>()),
-                Times.Once);
+            usClient.Verify(x => x.Send(It.IsAny<UsLookup>()), Never);
+            logger.As<ILogger>().Verify(AddressValidateStart.IsLoggedWith(Information), Once);
+            logger.As<ILogger>().Verify(AddressValidateEnd.IsLoggedWith(Information), Once);
         }
 
         [Fact]
@@ -208,29 +181,15 @@
             };
             var usClient = new Mock<IClient<UsLookup>>();
             usClient.Setup(x => x.Send(It.IsAny<UsLookup>())).Throws<ArgumentNullException>();
-            var internationalClient = Mock.Of<IClient<InternationalLookup>>();
+            var internationalClient = Of<IClient<InternationalLookup>>();
             var logger = new Mock<ILogger<SmartyStreetsAddressService>>();
             var service = new SmartyStreetsAddressService(usClient.Object, internationalClient, logger.Object);
-            async Task TestCode() => await service.ValidateAsync(address).ConfigureAwait(false);
+            Task TestCode() => service.ValidateAsync(address);
 
             // Act / Assert
             var exception = await Assert.ThrowsAsync<ArgumentNullException>(TestCode).ConfigureAwait(false);
-            logger.Verify(
-                x => x.Log(
-                    Information,
-                    It.Is<EventId>(y => y.Id == (int)ValidateStart && y.Name == $"{ValidateStart}"),
-                    It.IsAny<It.IsAnyType>(),
-                    null,
-                    (Func<It.IsAnyType, Exception, string>)It.IsAny<object>()),
-                Times.Once);
-            logger.Verify(
-                x => x.Log(
-                    Error,
-                    It.Is<EventId>(y => y.Id == (int)ValidateError && y.Name == $"{ValidateError}"),
-                    It.IsAny<It.IsAnyType>(),
-                    exception,
-                    (Func<It.IsAnyType, Exception, string>)It.IsAny<object>()),
-                Times.Once);
+            logger.As<ILogger>().Verify(AddressValidateStart.IsLoggedWith(Information), Once);
+            logger.As<ILogger>().Verify(AddressValidateError.IsLoggedWith(Error, exception), Once);
         }
     }
 }

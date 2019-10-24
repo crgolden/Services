@@ -4,6 +4,7 @@
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using MongoDB.Driver;
+    using static System.String;
 
     public static class ServiceCollectionExtensions
     {
@@ -19,25 +20,29 @@
             var section = configuration.GetSection(nameof(MongoDataOptions));
             if (!section.Exists())
             {
-                throw new Exception($"{nameof(MongoDataOptions)} section doesn't exist");
+                throw new ArgumentException(
+                    message: $"{nameof(MongoDataOptions)} section doesn't exist",
+                    paramName: nameof(configuration));
             }
 
             services.Configure<MongoDataOptions>(section);
-            var mongoDataOptions = section.Get<MongoDataOptions>();
-            if (mongoDataOptions == default ||
-                string.IsNullOrEmpty(mongoDataOptions.ConnectionString) ||
-                string.IsNullOrEmpty(mongoDataOptions.DatabaseName))
+            var options = section.Get<MongoDataOptions>();
+            if (options == default ||
+                IsNullOrEmpty(options.ConnectionString) ||
+                IsNullOrEmpty(options.DatabaseName))
             {
-                throw new Exception($"{nameof(MongoDataOptions)} section is invalid");
+                throw new ArgumentException(
+                    message: $"{nameof(MongoDataOptions)} section is invalid",
+                    paramName: nameof(configuration));
             }
 
             services.AddSingleton<IMongoClient>(
-                implementationFactory: sp => new MongoClient(mongoDataOptions.ConnectionString));
+                implementationFactory: sp => new MongoClient(options.ConnectionString));
             services.AddScoped(
                 implementationFactory: sp =>
                 {
                     var mongoClient = sp.GetRequiredService<IMongoClient>();
-                    return mongoClient.GetDatabase(mongoDataOptions.DatabaseName);
+                    return mongoClient.GetDatabase(options.DatabaseName);
                 });
             return services;
         }

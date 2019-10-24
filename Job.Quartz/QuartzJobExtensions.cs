@@ -2,12 +2,12 @@
 {
     using System;
     using System.Linq;
-    using System.Reflection;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Quartz;
     using Quartz.Impl;
     using Quartz.Spi;
+    using static System.Reflection.Assembly;
     using static QuartzJobStore;
 
     public static class QuartzJobExtensions
@@ -32,8 +32,7 @@
 
             services.AddSingleton<IJobFactory, QuartzJobFactory>();
             services.AddSingleton<ISchedulerFactory>(schedulerFactory);
-            foreach (var job in Assembly
-                .GetExecutingAssembly()
+            foreach (var job in GetExecutingAssembly()
                 .GetTypes()
                 .Where(x => x.IsSubclassOf(typeof(QuartzJobDetail)) && !x.IsAbstract))
             {

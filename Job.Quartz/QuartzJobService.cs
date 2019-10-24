@@ -13,6 +13,7 @@
     using static System.DateTime;
     using static Common.EventId;
 
+    /// <inheritdoc />
     public class QuartzJobService : IHostedService
     {
         private readonly IServiceProvider _services;
@@ -34,6 +35,7 @@
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+        /// <inheritdoc />
         public async Task StartAsync(CancellationToken cancellationToken)
         {
             using (var scope = _services.CreateScope())
@@ -47,11 +49,12 @@
             }
 
             _logger.LogInformation(
-                eventId: new EventId((int)HostedServiceStarted, $"{HostedServiceStarted}"),
+                eventId: new EventId((int)HostedServiceStart, $"{HostedServiceStart}"),
                 message: "Quartz Job Service Started at {@Time}",
                 args: new object[] { UtcNow });
         }
 
+        /// <inheritdoc />
         public async Task StopAsync(CancellationToken cancellationToken)
         {
             using (var scope = _services.CreateScope())
@@ -64,7 +67,7 @@
             }
 
             _logger.LogInformation(
-                eventId: new EventId((int)HostedServiceStopped, $"{HostedServiceStopped}"),
+                eventId: new EventId((int)HostedServiceStop, $"{HostedServiceStop}"),
                 message: "Quartz Job Service Stopped at {@Time}",
                 args: new object[] { UtcNow });
         }
