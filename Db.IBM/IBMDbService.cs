@@ -2,12 +2,14 @@
 {
     using System;
     using System.Data.Common;
+    using System.Diagnostics.CodeAnalysis;
     using Common;
     using IBM.Data.DB2.Core;
     using Microsoft.Extensions.Options;
     using static Common.DbServiceType;
 
     /// <inheritdoc cref="IDbService" />
+    [SuppressMessage("Minor Code Smell", "S101:Types should be named in PascalCase", Justification = "IBM is an abbreviation")]
     public class IBMDbService : DbProviderFactory, IDbService
     {
         private readonly DB2ConnectionStringBuilder _connectionStringBuilder;

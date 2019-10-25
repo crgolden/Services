@@ -31,7 +31,7 @@
         }
 
         /// <inheritdoc />
-        public async Task SendEmailAsync(
+        public Task SendEmailAsync(
             string? source,
             IEnumerable<string>? destinations,
             string? subject,
@@ -66,6 +66,18 @@
                 throw new ArgumentNullException(nameof(htmlBody));
             }
 
+            return SendEmail(source, recipients, subject, htmlBody, textBody, logLevel, cancellationToken);
+        }
+
+        private async Task SendEmail(
+            string source,
+            List<string> recipients,
+            string subject,
+            string htmlBody,
+            string? textBody,
+            LogLevel logLevel,
+            CancellationToken cancellationToken)
+        {
             var sendEmailRequest = new SendEmailRequest
             {
                 Source = source,

@@ -26,16 +26,16 @@
         /// <inheritdoc />
         public void OnStateUnapplied(ApplyStateContext context, IWriteOnlyTransaction transaction)
         {
-            if (context == default)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
-            context.JobExpirationTimeout = _jobExpirationTimeout;
+            ApplyJobExpirationTimeout(context);
         }
 
         /// <inheritdoc />
         public void OnStateApplied(ApplyStateContext context, IWriteOnlyTransaction transaction)
+        {
+            ApplyJobExpirationTimeout(context);
+        }
+
+        private void ApplyJobExpirationTimeout(ApplyStateContext context)
         {
             if (context == default)
             {

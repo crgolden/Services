@@ -8,6 +8,7 @@
     using static System.Enum;
     using static System.String;
     using static System.TimeSpan;
+    using static Common.DatabaseType;
 
     public static class ServiceCollectionExtensions
     {
@@ -49,67 +50,76 @@
             DatabaseType? databaseType,
             EntityFrameworkDataOptions? options)
         {
-            switch (databaseType)
+            return databaseType switch
             {
-                case DatabaseType.SqlServer:
-                    if (options?.SqlServerOptions == default)
-                    {
-                        throw new ArgumentException(
-                            message: $"{nameof(SqlServerOptions)} section is invalid",
-                            paramName: nameof(options));
-                    }
+                SqlServer => GetSqlServerBuilder(options),
+                Sqlite => GetSqliteBuilder(options),
+                _ => throw new ArgumentOutOfRangeException(nameof(databaseType))
+            };
+        }
 
-                    return builder =>
-                    {
-                        builder.UseSqlServer(
-                            connectionString: options.SqlServerOptions.GetConnectionString(),
-                            sqlServerOptionsAction: sqlOptions =>
-                            {
-                                sqlOptions.EnableRetryOnFailure(
-                                    maxRetryCount: 15,
-                                    maxRetryDelay: FromSeconds(30),
-                                    errorNumbersToAdd: default);
-                                if (IsNullOrEmpty(options.AssemblyName))
-                                {
-                                    return;
-                                }
-
-                                sqlOptions.MigrationsAssembly(options.AssemblyName);
-                            });
-                        if (options.UseLazyLoadingProxies)
-                        {
-                            builder.UseLazyLoadingProxies();
-                        }
-                    };
-                case DatabaseType.Sqlite:
-                    if (options?.SqliteOptions == default)
-                    {
-                        throw new ArgumentException(
-                            message: $"{nameof(SqliteOptions)} section is invalid",
-                            paramName: nameof(options));
-                    }
-
-                    return builder =>
-                    {
-                        builder.UseSqlite(
-                            connectionString: options.SqliteOptions.GetConnectionString(),
-                            sqliteOptionsAction: sqliteOptions =>
-                            {
-                                if (IsNullOrEmpty(options.AssemblyName))
-                                {
-                                    return;
-                                }
-
-                                sqliteOptions.MigrationsAssembly(options.AssemblyName);
-                            });
-                        if (options.UseLazyLoadingProxies)
-                        {
-                            builder.UseLazyLoadingProxies();
-                        }
-                    };
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(databaseType));
+        private static Action<DbContextOptionsBuilder> GetSqlServerBuilder(
+            EntityFrameworkDataOptions? options)
+        {
+            if (options?.SqlServerOptions == default)
+            {
+                throw new ArgumentException(
+                    message: $"{nameof(SqlServerOptions)} section is invalid",
+                    paramName: nameof(options));
             }
+
+            return builder =>
+            {
+                builder.UseSqlServer(
+                    connectionString: options.SqlServerOptions.GetConnectionString(),
+                    sqlServerOptionsAction: sqlOptions =>
+                    {
+                        sqlOptions.EnableRetryOnFailure(
+                            maxRetryCount: 15,
+                            maxRetryDelay: FromSeconds(30),
+                            errorNumbersToAdd: default);
+                        if (IsNullOrEmpty(options.AssemblyName))
+                        {
+                            return;
+                        }
+
+                        sqlOptions.MigrationsAssembly(options.AssemblyName);
+                    });
+                if (options.UseLazyLoadingProxies)
+                {
+                    builder.UseLazyLoadingProxies();
+                }
+            };
+        }
+
+        private static Action<DbContextOptionsBuilder> GetSqliteBuilder(
+            EntityFrameworkDataOptions? options)
+        {
+            if (options?.SqliteOptions == default)
+            {
+                throw new ArgumentException(
+                    message: $"{nameof(SqliteOptions)} section is invalid",
+                    paramName: nameof(options));
+            }
+
+            return builder =>
+            {
+                builder.UseSqlite(
+                    connectionString: options.SqliteOptions.GetConnectionString(),
+                    sqliteOptionsAction: sqliteOptions =>
+                    {
+                        if (IsNullOrEmpty(options.AssemblyName))
+                        {
+                            return;
+                        }
+
+                        sqliteOptions.MigrationsAssembly(options.AssemblyName);
+                    });
+                if (options.UseLazyLoadingProxies)
+                {
+                    builder.UseLazyLoadingProxies();
+                }
+            };
         }
     }
 }

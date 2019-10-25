@@ -39,172 +39,73 @@
         public DataServiceType Type => Mongo;
 
         /// <inheritdoc />
-        public async Task<T> CreateAsync<T>(
-            T? document,
+        public Task<T> CreateAsync<T>(
+            T? record,
             LogLevel logLevel = Information,
             CancellationToken cancellationToken = default)
             where T : class
         {
             var collectionName = GetCollectionName<T>();
-            if (document == default)
+            if (record == default)
             {
-                throw new ArgumentNullException(nameof(document));
+                throw new ArgumentNullException(nameof(record));
             }
 
-            try
-            {
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataCreateStart, $"{DataCreateStart}"),
-                    message: "Creating document {@Document} at {@Time}",
-                    args: new object[] { document, UtcNow });
-                var collection = _database.GetCollection<T>(collectionName);
-                await collection.InsertOneAsync(document, default, cancellationToken).ConfigureAwait(false);
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataCreateEnd, $"{DataCreateEnd}"),
-                    message: "Created document {@Document} at {@Time}",
-                    args: new object[] { document, UtcNow });
-                return document;
-            }
-            catch (Exception e)
-            {
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataCreateError, $"{DataCreateError}"),
-                    exception: e,
-                    message: "Error creating document {@Document} at {@Time}",
-                    args: new object[] { document, UtcNow });
-                throw;
-            }
+            return Create(record, collectionName, logLevel, cancellationToken);
         }
 
         /// <inheritdoc />
-        public async Task<T?> ReadAsync<T>(
-            Expression<Func<T, bool>>? filter,
+        public Task<T?> ReadAsync<T>(
+            Expression<Func<T, bool>>? expression,
             LogLevel logLevel = Information,
             CancellationToken cancellationToken = default)
             where T : class
         {
             var collectionName = GetCollectionName<T>();
-            if (filter == default)
+            if (expression == default)
             {
-                throw new ArgumentNullException(nameof(filter));
+                throw new ArgumentNullException(nameof(expression));
             }
 
-            try
-            {
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataReadStart, $"{DataReadStart}"),
-                    message: "Reading filter {@Filter} at {@Time}",
-                    args: new object[] { filter.Body, UtcNow });
-                var collection = _database.GetCollection<T>(collectionName);
-                var cursor = await collection.FindAsync(filter, default, cancellationToken).ConfigureAwait(false);
-                var document = await cursor.SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataReadEnd, $"{DataReadEnd}"),
-                    message: "Read document {@Document} with filter {@Filter} at {@Time}",
-                    args: new object[] { document, filter.Body, UtcNow });
-                return document;
-            }
-            catch (Exception e)
-            {
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataReadError, $"{DataReadError}"),
-                    exception: e,
-                    message: "Error reading filter {@Filter} at {@Time}",
-                    args: new object[] { filter.Body, UtcNow });
-                throw;
-            }
+            return Read(expression, collectionName, logLevel, cancellationToken);
         }
 
         /// <inheritdoc />
-        public async Task UpdateAsync<T>(
-            Expression<Func<T, bool>>? filter,
-            T? document,
+        public Task UpdateAsync<T>(
+            Expression<Func<T, bool>>? expression,
+            T? record,
             LogLevel logLevel = Information,
             CancellationToken cancellationToken = default)
             where T : class
         {
             var collectionName = GetCollectionName<T>();
-            if (filter == default)
+            if (expression == default)
             {
-                throw new ArgumentNullException(nameof(filter));
+                throw new ArgumentNullException(nameof(expression));
             }
 
-            if (document == default)
+            if (record == default)
             {
-                throw new ArgumentNullException(nameof(document));
+                throw new ArgumentNullException(nameof(record));
             }
 
-            try
-            {
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataUpdateStart, $"{DataUpdateStart}"),
-                    message: "Updating document {@Document} with filter {@Filter} at {@Time}",
-                    args: new object[] { document, filter.Body, UtcNow });
-                var collection = _database.GetCollection<T>(collectionName);
-                await collection.ReplaceOneAsync(filter, document, default, cancellationToken).ConfigureAwait(false);
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataUpdateEnd, $"{DataUpdateEnd}"),
-                    message: "Updated document {@Document} with filter {@Filter} at {@Time}",
-                    args: new object[] { document, filter.Body, UtcNow });
-            }
-            catch (Exception e)
-            {
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataUpdateError, $"{DataUpdateError}"),
-                    exception: e,
-                    message: "Error updating document {@Document} with filter {@Filter} at {@Time}",
-                    args: new object[] { document, filter.Body, UtcNow });
-                throw;
-            }
+            return Update(expression, record, collectionName, logLevel, cancellationToken);
         }
 
         /// <inheritdoc />
-        public async Task DeleteAsync<T>(
-            Expression<Func<T, bool>>? filter,
+        public Task DeleteAsync<T>(
+            Expression<Func<T, bool>>? expression,
             LogLevel logLevel = Information,
             CancellationToken cancellationToken = default)
             where T : class
         {
             var collectionName = GetCollectionName<T>();
-            if (filter == default)
+            if (expression == default)
             {
-                throw new ArgumentNullException(nameof(filter));
+                throw new ArgumentNullException(nameof(expression));
             }
 
-            try
-            {
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataDeleteStart, $"{DataDeleteStart}"),
-                    message: "Deleting with filter {@Filter} at {@Time}",
-                    args: new object[] { filter.Body, UtcNow });
-                var collection = _database.GetCollection<T>(collectionName);
-                await collection.DeleteOneAsync(filter, default, cancellationToken).ConfigureAwait(false);
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataDeleteEnd, $"{DataDeleteEnd}"),
-                    message: "Deleted with filter {@Filter} at {@Time}",
-                    args: new object[] { filter.Body, UtcNow });
-            }
-            catch (Exception e)
-            {
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataDeleteError, $"{DataDeleteError}"),
-                    exception: e,
-                    message: "Error deleting with filter {@Filter} at {@Time}",
-                    args: new object[] { filter.Body, UtcNow });
-                throw;
-            }
+            return Delete(expression, collectionName, logLevel, cancellationToken);
         }
 
         /// <inheritdoc />
@@ -249,6 +150,146 @@
             }
 
             return name;
+        }
+
+        private async Task<T> Create<T>(
+            T record,
+            string collectionName,
+            LogLevel logLevel,
+            CancellationToken cancellationToken)
+            where T : class
+        {
+            try
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)DataCreateStart, $"{DataCreateStart}"),
+                    message: "Creating document {@Document} at {@Time}",
+                    args: new object[] { record, UtcNow });
+                var collection = _database.GetCollection<T>(collectionName);
+                await collection.InsertOneAsync(record, default, cancellationToken).ConfigureAwait(false);
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)DataCreateEnd, $"{DataCreateEnd}"),
+                    message: "Created document {@Document} at {@Time}",
+                    args: new object[] { record, UtcNow });
+                return record;
+            }
+            catch (Exception e)
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)DataCreateError, $"{DataCreateError}"),
+                    exception: e,
+                    message: "Error creating document {@Document} at {@Time}",
+                    args: new object[] { record, UtcNow });
+                throw;
+            }
+        }
+
+        private async Task<T?> Read<T>(
+            Expression<Func<T, bool>> expression,
+            string collectionName,
+            LogLevel logLevel,
+            CancellationToken cancellationToken)
+            where T : class
+        {
+            try
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)DataReadStart, $"{DataReadStart}"),
+                    message: "Reading filter {@Filter} at {@Time}",
+                    args: new object[] { expression.Body, UtcNow });
+                var collection = _database.GetCollection<T>(collectionName);
+                var cursor = await collection.FindAsync(expression, default, cancellationToken).ConfigureAwait(false);
+                var document = await cursor.SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)DataReadEnd, $"{DataReadEnd}"),
+                    message: "Read document {@Document} with filter {@Filter} at {@Time}",
+                    args: new object[] { document, expression.Body, UtcNow });
+                return document;
+            }
+            catch (Exception e)
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)DataReadError, $"{DataReadError}"),
+                    exception: e,
+                    message: "Error reading filter {@Filter} at {@Time}",
+                    args: new object[] { expression.Body, UtcNow });
+                throw;
+            }
+        }
+
+        private async Task Update<T>(
+            Expression<Func<T, bool>> expression,
+            T record,
+            string collectionName,
+            LogLevel logLevel,
+            CancellationToken cancellationToken)
+            where T : class
+        {
+            try
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)DataUpdateStart, $"{DataUpdateStart}"),
+                    message: "Updating document {@Document} with filter {@Filter} at {@Time}",
+                    args: new object[] { record, expression.Body, UtcNow });
+                var collection = _database.GetCollection<T>(collectionName);
+                await collection.ReplaceOneAsync(expression, record, default, cancellationToken).ConfigureAwait(false);
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)DataUpdateEnd, $"{DataUpdateEnd}"),
+                    message: "Updated document {@Document} with filter {@Filter} at {@Time}",
+                    args: new object[] { record, expression.Body, UtcNow });
+            }
+            catch (Exception e)
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)DataUpdateError, $"{DataUpdateError}"),
+                    exception: e,
+                    message: "Error updating document {@Document} with filter {@Filter} at {@Time}",
+                    args: new object[] { record, expression.Body, UtcNow });
+                throw;
+            }
+        }
+
+        private async Task Delete<T>(
+            Expression<Func<T, bool>> expression,
+            string collectionName,
+            LogLevel logLevel,
+            CancellationToken cancellationToken)
+            where T : class
+        {
+            try
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)DataDeleteStart, $"{DataDeleteStart}"),
+                    message: "Deleting with filter {@Filter} at {@Time}",
+                    args: new object[] { expression.Body, UtcNow });
+                var collection = _database.GetCollection<T>(collectionName);
+                await collection.DeleteOneAsync(expression, default, cancellationToken).ConfigureAwait(false);
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)DataDeleteEnd, $"{DataDeleteEnd}"),
+                    message: "Deleted with filter {@Filter} at {@Time}",
+                    args: new object[] { expression.Body, UtcNow });
+            }
+            catch (Exception e)
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)DataDeleteError, $"{DataDeleteError}"),
+                    exception: e,
+                    message: "Error deleting with filter {@Filter} at {@Time}",
+                    args: new object[] { expression.Body, UtcNow });
+                throw;
+            }
         }
     }
 }

@@ -6,7 +6,6 @@
     using Moq;
     using Xunit;
     using static Common.DbServiceType;
-    using static Xunit.Assert;
 
     public class IBMDbServiceTests
     {
@@ -31,7 +30,7 @@
             static object TestCode() => new IBMDbService(default);
 
             // Assert
-            Throws<ArgumentNullException>(TestCode);
+            Assert.Throws<ArgumentNullException>(TestCode);
         }
 
         [Fact]
@@ -41,7 +40,7 @@
             var ibmDbService = new IBMDbService(_ibmDbOptions.Object);
 
             // Assert
-            Equal(IBM, ibmDbService.Type);
+            Assert.Equal(IBM, ibmDbService.Type);
         }
 
         [Fact]
@@ -55,7 +54,7 @@
             };
 
             // Assert
-            Equal(name, ibmDbService.Name);
+            Assert.Equal(name, ibmDbService.Name);
         }
 
         [Fact]
@@ -65,7 +64,7 @@
             var ibmDbService = new IBMDbService(_ibmDbOptions.Object);
 
             // Assert
-            True(ibmDbService.CanCreateDataSourceEnumerator);
+            Assert.True(ibmDbService.CanCreateDataSourceEnumerator);
         }
 
         [Fact]
@@ -78,7 +77,7 @@
             var command = ibmDbService.CreateCommand();
 
             // Assert
-            IsType<DB2Command>(command);
+            Assert.IsType<DB2Command>(command);
         }
 
         [Fact]
@@ -91,7 +90,7 @@
             var commandBuilder = ibmDbService.CreateCommandBuilder();
 
             // Assert
-            IsType<DB2CommandBuilder>(commandBuilder);
+            Assert.IsType<DB2CommandBuilder>(commandBuilder);
         }
 
         [Fact]
@@ -104,7 +103,7 @@
             var connection = ibmDbService.CreateConnection();
 
             // Assert
-            IsType<DB2Connection>(connection);
+            Assert.IsType<DB2Connection>(connection);
         }
 
         [Fact]
@@ -117,11 +116,11 @@
             var connectionStringBuilder = ibmDbService.CreateConnectionStringBuilder();
 
             // Assert
-            var ibmConnectionStringBuilder = IsType<DB2ConnectionStringBuilder>(connectionStringBuilder);
-            Equal(_ibmDbOptions.Object.Value.Database, ibmConnectionStringBuilder.Database);
-            Equal(_ibmDbOptions.Object.Value.DBName, ibmConnectionStringBuilder.DBName);
-            Equal(_ibmDbOptions.Object.Value.UserId, ibmConnectionStringBuilder.UserID);
-            Equal(_ibmDbOptions.Object.Value.Password, ibmConnectionStringBuilder.Password);
+            var ibmConnectionStringBuilder = Assert.IsType<DB2ConnectionStringBuilder>(connectionStringBuilder);
+            Assert.Equal(_ibmDbOptions.Object.Value.Database, ibmConnectionStringBuilder.Database);
+            Assert.Equal(_ibmDbOptions.Object.Value.DBName, ibmConnectionStringBuilder.DBName);
+            Assert.Equal(_ibmDbOptions.Object.Value.UserId, ibmConnectionStringBuilder.UserID);
+            Assert.Equal(_ibmDbOptions.Object.Value.Password, ibmConnectionStringBuilder.Password);
         }
 
         [Fact]
@@ -134,7 +133,7 @@
             var dataAdapter = ibmDbService.CreateDataAdapter();
 
             // Assert
-            IsType<DB2DataAdapter>(dataAdapter);
+            Assert.IsType<DB2DataAdapter>(dataAdapter);
         }
 
         [Fact]
@@ -147,7 +146,7 @@
             var parameter = ibmDbService.CreateParameter();
 
             // Assert
-            IsType<DB2Parameter>(parameter);
+            Assert.IsType<DB2Parameter>(parameter);
         }
 
         [Fact]
@@ -160,7 +159,7 @@
             var dataSourceEnumerator = ibmDbService.CreateDataSourceEnumerator();
 
             // Assert
-            IsType<DB2DataSourceEnumerator>(dataSourceEnumerator);
+            Assert.IsType<DB2DataSourceEnumerator>(dataSourceEnumerator);
         }
     }
 }

@@ -36,158 +36,64 @@
         public DataServiceType Type => EntityFramework;
 
         /// <inheritdoc />
-        public async Task<T> CreateAsync<T>(
-            T? entity,
+        public Task<T> CreateAsync<T>(
+            T? record,
             LogLevel logLevel = Information,
             CancellationToken cancellationToken = default)
             where T : class
         {
-            if (entity == default)
+            if (record == default)
             {
-                throw new ArgumentNullException(nameof(entity));
+                throw new ArgumentNullException(nameof(record));
             }
 
-            try
-            {
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataCreateStart, $"{DataCreateStart}"),
-                    message: "Creating entity {@Entity} at {@Time}",
-                    args: new object[] { entity, UtcNow });
-                _context.Entry(entity).State = Added;
-                await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataCreateEnd, $"{DataCreateEnd}"),
-                    message: "Created entity {@Entity} at {@Time}",
-                    args: new object[] { entity, UtcNow });
-                return entity;
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(
-                    eventId: new EventId((int)DataCreateError, $"{DataCreateError}"),
-                    exception: e,
-                    message: "Error creating entity {@Entity} at {@Time}",
-                    args: new object[] { entity, UtcNow });
-                throw;
-            }
+            return Create(record, logLevel, cancellationToken);
         }
 
         /// <inheritdoc />
-        public async Task<T?> ReadAsync<T>(
-            Expression<Func<T, bool>>? predicate,
+        public Task<T?> ReadAsync<T>(
+            Expression<Func<T, bool>>? expression,
             LogLevel logLevel = Information,
             CancellationToken cancellationToken = default)
             where T : class
         {
-            if (predicate == default)
+            if (expression == default)
             {
-                throw new ArgumentNullException(nameof(predicate));
+                throw new ArgumentNullException(nameof(expression));
             }
 
-            try
-            {
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataReadStart, $"{DataReadStart}"),
-                    message: "Reading predicate {@Predicate} at {@Time}",
-                    args: new object[] { predicate.Body, UtcNow });
-                var entity = await _context.Set<T>().SingleOrDefaultAsync(predicate, cancellationToken).ConfigureAwait(false);
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataReadEnd, $"{DataReadEnd}"),
-                    message: "Read entity {@Entity} with predicate {@Predicate} at {@Time}",
-                    args: new object[] { entity, predicate.Body, UtcNow });
-                return entity;
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(
-                    eventId: new EventId((int)DataReadError, $"{DataReadError}"),
-                    exception: e,
-                    message: "Error reading predicate {@Predicate} at {@Time}",
-                    args: new object[] { predicate.Body, UtcNow });
-                throw;
-            }
+            return Read(expression, logLevel, cancellationToken);
         }
 
         /// <inheritdoc />
-        public async Task UpdateAsync<T>(
-            Expression<Func<T, bool>>? predicate,
-            T? entity,
+        public Task UpdateAsync<T>(
+            Expression<Func<T, bool>>? expression,
+            T? record,
             LogLevel logLevel = Information,
             CancellationToken cancellationToken = default)
             where T : class
         {
-            if (entity == default)
+            if (record == default)
             {
-                throw new ArgumentNullException(nameof(entity));
+                throw new ArgumentNullException(nameof(record));
             }
 
-            try
-            {
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataUpdateStart, $"{DataUpdateStart}"),
-                    message: "Updating entity {@Entity} at {@Time}",
-                    args: new object[] { entity, UtcNow });
-                _context.Entry(entity).State = Modified;
-                await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataUpdateEnd, $"{DataUpdateEnd}"),
-                    message: "Updated entity {@Entity} at {@Time}",
-                    args: new object[] { entity, UtcNow });
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(
-                    eventId: new EventId((int)DataUpdateError, $"{DataUpdateError}"),
-                    exception: e,
-                    message: "Error updating entity {@Entity} at {@Time}",
-                    args: new object[] { entity, UtcNow });
-                throw;
-            }
+            return Update(record, logLevel, cancellationToken);
         }
 
         /// <inheritdoc />
-        public async Task DeleteAsync<T>(
-            Expression<Func<T, bool>>? predicate,
+        public Task DeleteAsync<T>(
+            Expression<Func<T, bool>>? expression,
             LogLevel logLevel = Information,
             CancellationToken cancellationToken = default)
             where T : class
         {
-            if (predicate == default)
+            if (expression == default)
             {
-                throw new ArgumentNullException(nameof(predicate));
+                throw new ArgumentNullException(nameof(expression));
             }
 
-            try
-            {
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataDeleteStart, $"{DataDeleteStart}"),
-                    message: "Deleting with predicate {@Predicate} at {@Time}",
-                    args: new object[] { predicate.Body, UtcNow });
-                var entity = await _context.Set<T>().SingleOrDefaultAsync(predicate, cancellationToken).ConfigureAwait(false);
-                _context.Entry(entity).State = Deleted;
-                await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataDeleteEnd, $"{DataDeleteEnd}"),
-                    message: "Deleted entity {@Entity} with predicate {@Predicate} at {@Time}",
-                    args: new object[] { entity, predicate.Body, UtcNow });
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(
-                    eventId: new EventId((int)DataDeleteError, $"{DataDeleteError}"),
-                    exception: e,
-                    message: "Error deleting with predicate {@Predicate} at {@Time}",
-                    args: new object[] { predicate.Body, UtcNow });
-                throw;
-            }
+            return Delete(expression, logLevel, cancellationToken);
         }
 
         /// <inheritdoc />
@@ -217,6 +123,136 @@
                     exception: e,
                     message: "Error listing type {@Type} at {@Time}",
                     args: new object[] { typeName, UtcNow });
+                throw;
+            }
+        }
+
+        private async Task<T> Create<T>(
+            T record,
+            LogLevel logLevel,
+            CancellationToken cancellationToken)
+            where T : class
+        {
+            try
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)DataCreateStart, $"{DataCreateStart}"),
+                    message: "Creating entity {@Entity} at {@Time}",
+                    args: new object[] { record, UtcNow });
+                _context.Entry(record).State = Added;
+                await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)DataCreateEnd, $"{DataCreateEnd}"),
+                    message: "Created entity {@Entity} at {@Time}",
+                    args: new object[] { record, UtcNow });
+                return record;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(
+                    eventId: new EventId((int)DataCreateError, $"{DataCreateError}"),
+                    exception: e,
+                    message: "Error creating entity {@Entity} at {@Time}",
+                    args: new object[] { record, UtcNow });
+                throw;
+            }
+        }
+
+        private async Task<T?> Read<T>(
+            Expression<Func<T, bool>> expression,
+            LogLevel logLevel,
+            CancellationToken cancellationToken)
+            where T : class
+        {
+            try
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)DataReadStart, $"{DataReadStart}"),
+                    message: "Reading predicate {@Predicate} at {@Time}",
+                    args: new object[] { expression.Body, UtcNow });
+                var entity = await _context.Set<T>().SingleOrDefaultAsync(expression, cancellationToken).ConfigureAwait(false);
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)DataReadEnd, $"{DataReadEnd}"),
+                    message: "Read entity {@Entity} with predicate {@Predicate} at {@Time}",
+                    args: new object[] { entity, expression.Body, UtcNow });
+                return entity;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(
+                    eventId: new EventId((int)DataReadError, $"{DataReadError}"),
+                    exception: e,
+                    message: "Error reading predicate {@Predicate} at {@Time}",
+                    args: new object[] { expression.Body, UtcNow });
+                throw;
+            }
+        }
+
+        private async Task Update<T>(
+            T record,
+            LogLevel logLevel,
+            CancellationToken cancellationToken)
+            where T : class
+        {
+            try
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)DataUpdateStart, $"{DataUpdateStart}"),
+                    message: "Updating entity {@Entity} at {@Time}",
+                    args: new object[] { record, UtcNow });
+                _context.Entry(record).State = Modified;
+                await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)DataUpdateEnd, $"{DataUpdateEnd}"),
+                    message: "Updated entity {@Entity} at {@Time}",
+                    args: new object[] { record, UtcNow });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(
+                    eventId: new EventId((int)DataUpdateError, $"{DataUpdateError}"),
+                    exception: e,
+                    message: "Error updating entity {@Entity} at {@Time}",
+                    args: new object[] { record, UtcNow });
+                throw;
+            }
+        }
+
+        private async Task Delete<T>(
+            Expression<Func<T, bool>> expression,
+            LogLevel logLevel,
+            CancellationToken cancellationToken)
+            where T : class
+        {
+            try
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)DataDeleteStart, $"{DataDeleteStart}"),
+                    message: "Deleting with predicate {@Predicate} at {@Time}",
+                    args: new object[] { expression.Body, UtcNow });
+                var entity = await _context.Set<T>().SingleOrDefaultAsync(expression, cancellationToken).ConfigureAwait(false);
+                _context.Entry(entity).State = Deleted;
+                await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)DataDeleteEnd, $"{DataDeleteEnd}"),
+                    message: "Deleted entity {@Entity} with predicate {@Predicate} at {@Time}",
+                    args: new object[] { entity, expression.Body, UtcNow });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(
+                    eventId: new EventId((int)DataDeleteError, $"{DataDeleteError}"),
+                    exception: e,
+                    message: "Error deleting with predicate {@Predicate} at {@Time}",
+                    args: new object[] { expression.Body, UtcNow });
                 throw;
             }
         }

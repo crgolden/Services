@@ -36,7 +36,7 @@
         }
 
         /// <inheritdoc />
-        public async Task<IEnumerable<Address>> ValidateAsync(
+        public Task<IEnumerable<Address>> ValidateAsync(
             Address? address,
             LogLevel logLevel = Information,
             CancellationToken cancellationToken = default)
@@ -46,6 +46,14 @@
                 throw new ArgumentNullException(nameof(address));
             }
 
+            return Validate(address, logLevel, cancellationToken);
+        }
+
+        private async Task<IEnumerable<Address>> Validate(
+            Address address,
+            LogLevel logLevel,
+            CancellationToken cancellationToken)
+        {
             try
             {
                 AddressResolutionModel addressResolution;

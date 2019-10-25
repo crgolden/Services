@@ -30,7 +30,7 @@
         }
 
         /// <inheritdoc />
-        public async Task<string?> GetCustomerAsync(
+        public Task<string?> GetCustomerAsync(
             string? customerId,
             LogLevel logLevel = Information,
             CancellationToken cancellationToken = default)
@@ -40,6 +40,108 @@
                 throw new ArgumentNullException(nameof(customerId));
             }
 
+            return GetCustomer(customerId, logLevel, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public Task<string?> CreateCustomerAsync(
+            string? email,
+            string? tokenId,
+            LogLevel logLevel = Information,
+            CancellationToken cancellationToken = default)
+        {
+            if (IsNullOrEmpty(email))
+            {
+                throw new ArgumentNullException(nameof(email));
+            }
+
+            if (IsNullOrEmpty(tokenId))
+            {
+                throw new ArgumentNullException(nameof(tokenId));
+            }
+
+            return CreateCustomer(email, tokenId, logLevel, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public Task<string?> AuthorizeAsync(
+            string? customerId,
+            decimal? amount,
+            string? currency,
+            string? description = default,
+            LogLevel logLevel = Information,
+            CancellationToken cancellationToken = default)
+        {
+            if (IsNullOrEmpty(customerId))
+            {
+                throw new ArgumentNullException(nameof(customerId));
+            }
+
+            if (!amount.HasValue)
+            {
+                throw new ArgumentNullException(nameof(amount));
+            }
+
+            if (IsNullOrEmpty(currency))
+            {
+                throw new ArgumentNullException(nameof(currency));
+            }
+
+            return Authorize(customerId, amount.Value, currency, description, logLevel, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public Task<string?> CaptureAsync(
+            string? customerId,
+            decimal? amount,
+            string? currency,
+            string? description = default,
+            LogLevel logLevel = Information,
+            CancellationToken cancellationToken = default)
+        {
+            if (IsNullOrEmpty(customerId))
+            {
+                throw new ArgumentNullException(nameof(customerId));
+            }
+
+            if (!amount.HasValue)
+            {
+                throw new ArgumentNullException(nameof(amount));
+            }
+
+            if (IsNullOrEmpty(currency))
+            {
+                throw new ArgumentNullException(nameof(currency));
+            }
+
+            return Capture(customerId, amount.Value, currency, description, logLevel, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public Task UpdateAsync(
+            string? chargeId,
+            string? description,
+            LogLevel logLevel = Information,
+            CancellationToken cancellationToken = default)
+        {
+            if (IsNullOrEmpty(chargeId))
+            {
+                throw new ArgumentNullException(nameof(chargeId));
+            }
+
+            if (IsNullOrEmpty(description))
+            {
+                throw new ArgumentNullException(nameof(description));
+            }
+
+            return Update(chargeId, description, logLevel, cancellationToken);
+        }
+
+        private async Task<string?> GetCustomer(
+            string customerId,
+            LogLevel logLevel,
+            CancellationToken cancellationToken)
+        {
             var customerGetOptions = new CustomerGetOptions();
             try
             {
@@ -74,23 +176,12 @@
             }
         }
 
-        /// <inheritdoc />
-        public virtual async Task<string?> CreateCustomerAsync(
-            string? email,
-            string? tokenId,
-            LogLevel logLevel = Information,
-            CancellationToken cancellationToken = default)
+        private async Task<string?> CreateCustomer(
+            string email,
+            string tokenId,
+            LogLevel logLevel,
+            CancellationToken cancellationToken)
         {
-            if (IsNullOrEmpty(email))
-            {
-                throw new ArgumentNullException(nameof(email));
-            }
-
-            if (IsNullOrEmpty(tokenId))
-            {
-                throw new ArgumentNullException(nameof(tokenId));
-            }
-
             var customerCreateOptions = new CustomerCreateOptions
             {
                 Email = email,
@@ -128,33 +219,17 @@
             }
         }
 
-        /// <inheritdoc />
-        public virtual async Task<string?> AuthorizeAsync(
-            string? customerId,
-            decimal? amount,
-            string? currency,
-            string? description = default,
-            LogLevel logLevel = Information,
-            CancellationToken cancellationToken = default)
+        private async Task<string?> Authorize(
+            string customerId,
+            decimal amount,
+            string currency,
+            string? description,
+            LogLevel logLevel,
+            CancellationToken cancellationToken)
         {
-            if (IsNullOrEmpty(customerId))
-            {
-                throw new ArgumentNullException(nameof(customerId));
-            }
-
-            if (!amount.HasValue)
-            {
-                throw new ArgumentNullException(nameof(amount));
-            }
-
-            if (IsNullOrEmpty(currency))
-            {
-                throw new ArgumentNullException(nameof(currency));
-            }
-
             var chargeCreateOptions = new ChargeCreateOptions
             {
-                Amount = (long?)amount.Value * 100,
+                Amount = (long?)amount * 100,
                 Currency = currency,
                 Description = description,
                 Customer = customerId,
@@ -192,30 +267,14 @@
             }
         }
 
-        /// <inheritdoc />
-        public virtual async Task<string?> CaptureAsync(
-            string? customerId,
-            decimal? amount,
-            string? currency,
-            string? description = default,
-            LogLevel logLevel = Information,
-            CancellationToken cancellationToken = default)
+        private async Task<string?> Capture(
+            string customerId,
+            decimal amount,
+            string currency,
+            string? description,
+            LogLevel logLevel,
+            CancellationToken cancellationToken)
         {
-            if (IsNullOrEmpty(customerId))
-            {
-                throw new ArgumentNullException(nameof(customerId));
-            }
-
-            if (!amount.HasValue)
-            {
-                throw new ArgumentNullException(nameof(amount));
-            }
-
-            if (IsNullOrEmpty(currency))
-            {
-                throw new ArgumentNullException(nameof(currency));
-            }
-
             var chargeCreateOptions = new ChargeCreateOptions
             {
                 Amount = (long?)amount * 100,
@@ -256,23 +315,12 @@
             }
         }
 
-        /// <inheritdoc />
-        public virtual async Task UpdateAsync(
-            string? chargeId,
-            string? description,
-            LogLevel logLevel = Information,
-            CancellationToken cancellationToken = default)
+        private async Task Update(
+            string chargeId,
+            string description,
+            LogLevel logLevel,
+            CancellationToken cancellationToken)
         {
-            if (IsNullOrEmpty(chargeId))
-            {
-                throw new ArgumentNullException(nameof(chargeId));
-            }
-
-            if (IsNullOrEmpty(description))
-            {
-                throw new ArgumentNullException(nameof(description));
-            }
-
             var chargeUpdateOptions = new ChargeUpdateOptions
             {
                 Description = description

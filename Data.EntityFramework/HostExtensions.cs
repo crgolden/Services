@@ -9,7 +9,7 @@
 
     public static class HostExtensions
     {
-        public static async Task<IHost> MigrateDatabaseAsync(
+        public static Task<IHost> MigrateDatabaseAsync(
             this IHost host,
             CancellationToken cancellationToken = default)
         {
@@ -18,6 +18,13 @@
                 throw new ArgumentNullException(nameof(host));
             }
 
+            return MigrateDatabase(host, cancellationToken);
+        }
+
+        private static async Task<IHost> MigrateDatabase(
+            IHost host,
+            CancellationToken cancellationToken)
+        {
             using (var scope = host.Services.CreateScope())
             {
                 await using var context = scope.ServiceProvider.GetRequiredService<DbContext>();

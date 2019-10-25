@@ -76,7 +76,7 @@
         }
 
         [Fact]
-        public async Task CreateAsyncThrowsForNullEntity()
+        public async Task CreateAsyncThrowsForNullRecord()
         {
             // Arrange
             var context = Of<DbContext>();
@@ -86,7 +86,7 @@
 
             // Act / Assert
             var exception = await Assert.ThrowsAsync<ArgumentNullException>(TestCode).ConfigureAwait(false);
-            Assert.Equal("entity", exception.ParamName);
+            Assert.Equal("record", exception.ParamName);
         }
 
         [Fact]
@@ -121,10 +121,10 @@
         }
 
         [Fact]
-        public async Task CreateAsyncInvalidEntity()
+        public async Task CreateAsyncInvalidRecord()
         {
             // Arrange
-            var databaseName = $"{DatabaseNamePrefix}.{nameof(CreateAsyncInvalidEntity)}";
+            var databaseName = $"{DatabaseNamePrefix}.{nameof(CreateAsyncInvalidRecord)}";
             var options = new DbContextOptionsBuilder<TestContext>()
                 .UseInMemoryDatabase(databaseName)
                 .Options;
@@ -146,7 +146,7 @@
         }
 
         [Fact]
-        public async Task ReadAsyncThrowsForNullPredicate()
+        public async Task ReadAsyncThrowsForNullExpression()
         {
             // Arrange
             var context = Of<DbContext>();
@@ -156,7 +156,7 @@
 
             // Act / Assert
             var exception = await Assert.ThrowsAsync<ArgumentNullException>(TestCode).ConfigureAwait(false);
-            Assert.Equal("predicate", exception.ParamName);
+            Assert.Equal("expression", exception.ParamName);
         }
 
         [Fact]
@@ -193,10 +193,10 @@
         }
 
         [Fact]
-        public async Task ReadAsyncInvalidEntity()
+        public async Task ReadAsyncInvalidRecord()
         {
             // Arrange
-            var databaseName = $"{DatabaseNamePrefix}.{nameof(ReadAsyncInvalidEntity)}";
+            var databaseName = $"{DatabaseNamePrefix}.{nameof(ReadAsyncInvalidRecord)}";
             var options = new DbContextOptionsBuilder<TestContext>()
                 .UseInMemoryDatabase(databaseName)
                 .Options;
@@ -218,7 +218,7 @@
         }
 
         [Fact]
-        public async Task UpdateAsyncThrowsForNullEntity()
+        public async Task UpdateAsyncThrowsForNullRecord()
         {
             // Arrange
             var context = Of<DbContext>();
@@ -228,7 +228,7 @@
 
             // Act / Assert
             var exception = await Assert.ThrowsAsync<ArgumentNullException>(TestCode).ConfigureAwait(false);
-            Assert.Equal("entity", exception.ParamName);
+            Assert.Equal("record", exception.ParamName);
         }
 
         [Fact]
@@ -271,10 +271,10 @@
         }
 
         [Fact]
-        public async Task UpdateAsyncInvalidEntity()
+        public async Task UpdateAsyncInvalidRecord()
         {
             // Arrange
-            var databaseName = $"{DatabaseNamePrefix}.{nameof(UpdateAsyncInvalidEntity)}";
+            var databaseName = $"{DatabaseNamePrefix}.{nameof(UpdateAsyncInvalidRecord)}";
             var options = new DbContextOptionsBuilder<TestContext>()
                 .UseInMemoryDatabase(databaseName)
                 .Options;
@@ -296,7 +296,7 @@
         }
 
         [Fact]
-        public async Task DeleteAsyncThrowsForNullPredicate()
+        public async Task DeleteAsyncThrowsForNullExpression()
         {
             // Arrange
             var context = Of<DbContext>();
@@ -306,7 +306,7 @@
 
             // Act / Assert
             var exception = await Assert.ThrowsAsync<ArgumentNullException>(TestCode).ConfigureAwait(false);
-            Assert.Equal("predicate", exception.ParamName);
+            Assert.Equal("expression", exception.ParamName);
         }
 
         [Fact]
@@ -348,10 +348,10 @@
         }
 
         [Fact]
-        public async Task DeleteAsyncInvalidEntity()
+        public async Task DeleteAsyncInvalidRecord()
         {
             // Arrange
-            var databaseName = $"{DatabaseNamePrefix}.{nameof(DeleteAsyncInvalidEntity)}";
+            var databaseName = $"{DatabaseNamePrefix}.{nameof(DeleteAsyncInvalidRecord)}";
             var options = new DbContextOptionsBuilder<TestContext>()
                 .UseInMemoryDatabase(databaseName)
                 .Options;
@@ -382,23 +382,23 @@
                 .Options;
             var logger = new Mock<ILogger<EntityFrameworkDataService>>();
 
-            IQueryable<TestEntity> response;
+            IQueryable<object> response;
 
             // Act
             using (var context = new TestContext(options))
             {
                 var service = new EntityFrameworkDataService(context, logger.Object);
-                response = service.List<TestEntity>();
+                response = service.List<object>();
             }
 
             // Assert
-            Assert.IsAssignableFrom<DbSet<TestEntity>>(response);
+            Assert.IsAssignableFrom<DbSet<object>>(response);
             logger.As<ILogger>().Verify(DataListStart.IsLoggedWith(Information), Once);
             logger.As<ILogger>().Verify(DataListEnd.IsLoggedWith(Information), Once);
         }
 
         [Fact]
-        public void ListInvalidEntity()
+        public void ListInvalidRecord()
         {
             // Arrange
             var context = new Mock<DbContext>();
@@ -433,7 +433,7 @@
 
         private class TestEntity
         {
-            public Guid Key { get; private set; }
+            public Guid Key { get; private set; } = NewGuid();
 
             public string? Name { get; set; }
         }

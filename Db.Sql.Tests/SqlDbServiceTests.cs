@@ -6,7 +6,6 @@
     using Moq;
     using Xunit;
     using static Common.DbServiceType;
-    using static Xunit.Assert;
 
     public class SqlDbServiceTests
     {
@@ -30,7 +29,7 @@
             static object TestCode() => new SqlDbService(default);
 
             // Assert
-            Throws<ArgumentNullException>(TestCode);
+            Assert.Throws<ArgumentNullException>(TestCode);
         }
 
         [Fact]
@@ -40,7 +39,7 @@
             var sqlDbService = new SqlDbService(_sqlDbOptions.Object);
 
             // Assert
-            Equal(Sql, sqlDbService.Type);
+            Assert.Equal(Sql, sqlDbService.Type);
         }
 
         [Fact]
@@ -54,7 +53,7 @@
             };
 
             // Assert
-            Equal(name, sqlDbService.Name);
+            Assert.Equal(name, sqlDbService.Name);
         }
 
         [Fact]
@@ -67,7 +66,7 @@
             var command = sqlDbService.CreateCommand();
 
             // Assert
-            IsType<SqlCommand>(command);
+            Assert.IsType<SqlCommand>(command);
         }
 
         [Fact]
@@ -80,7 +79,7 @@
             var commandBuilder = sqlDbService.CreateCommandBuilder();
 
             // Assert
-            IsType<SqlCommandBuilder>(commandBuilder);
+            Assert.IsType<SqlCommandBuilder>(commandBuilder);
         }
 
         [Fact]
@@ -93,7 +92,7 @@
             var connection = sqlDbService.CreateConnection();
 
             // Assert
-            IsType<SqlConnection>(connection);
+            Assert.IsType<SqlConnection>(connection);
         }
 
         [Fact]
@@ -106,10 +105,10 @@
             var connectionStringBuilder = sqlDbService.CreateConnectionStringBuilder();
 
             // Assert
-            var sqlConnectionStringBuilder = IsType<SqlConnectionStringBuilder>(connectionStringBuilder);
-            Equal(_sqlDbOptions.Object.Value.DataSource, sqlConnectionStringBuilder.DataSource);
-            Equal(_sqlDbOptions.Object.Value.UserId, sqlConnectionStringBuilder.UserID);
-            Equal(_sqlDbOptions.Object.Value.Password, sqlConnectionStringBuilder.Password);
+            var sqlConnectionStringBuilder = Assert.IsType<SqlConnectionStringBuilder>(connectionStringBuilder);
+            Assert.Equal(_sqlDbOptions.Object.Value.DataSource, sqlConnectionStringBuilder.DataSource);
+            Assert.Equal(_sqlDbOptions.Object.Value.UserId, sqlConnectionStringBuilder.UserID);
+            Assert.Equal(_sqlDbOptions.Object.Value.Password, sqlConnectionStringBuilder.Password);
         }
 
         [Fact]
@@ -122,7 +121,7 @@
             var dataAdapter = sqlDbService.CreateDataAdapter();
 
             // Assert
-            IsType<SqlDataAdapter>(dataAdapter);
+            Assert.IsType<SqlDataAdapter>(dataAdapter);
         }
 
         [Fact]
@@ -135,7 +134,7 @@
             var parameter = sqlDbService.CreateParameter();
 
             // Assert
-            IsType<SqlParameter>(parameter);
+            Assert.IsType<SqlParameter>(parameter);
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿namespace Services
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using Microsoft.Extensions.DependencyInjection;
     using Quartz;
     using Quartz.Spi;
@@ -22,6 +23,7 @@
         }
 
         /// <inheritdoc />
+        [SuppressMessage("Critical Code Smell", "S1186:Methods should not be empty", Justification = "No implementation")]
         public void ReturnJob(IJob job)
         {
         }

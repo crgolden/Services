@@ -6,7 +6,6 @@
     using Moq;
     using Xunit;
     using static Common.DbServiceType;
-    using static Xunit.Assert;
 
     public class TeradataDbServiceTests
     {
@@ -32,7 +31,7 @@
             static object TestCode() => new TeradataDbService(default);
 
             // Assert
-            Throws<ArgumentNullException>(TestCode);
+            Assert.Throws<ArgumentNullException>(TestCode);
         }
 
         [Fact]
@@ -42,7 +41,7 @@
             var teradataDbService = new TeradataDbService(_teradataDbOptions.Object);
 
             // Assert
-            Equal(Teradata, teradataDbService.Type);
+            Assert.Equal(Teradata, teradataDbService.Type);
         }
 
         [Fact]
@@ -56,7 +55,7 @@
             };
 
             // Assert
-            Equal(name, teradataDbService.Name);
+            Assert.Equal(name, teradataDbService.Name);
         }
 
         [Fact]
@@ -69,7 +68,7 @@
             var command = teradataDbService.CreateCommand();
 
             // Assert
-            IsType<TdCommand>(command);
+            Assert.IsType<TdCommand>(command);
         }
 
         [Fact]
@@ -82,7 +81,7 @@
             var commandBuilder = teradataDbService.CreateCommandBuilder();
 
             // Assert
-            IsType<TdCommandBuilder>(commandBuilder);
+            Assert.IsType<TdCommandBuilder>(commandBuilder);
         }
 
         [Fact]
@@ -95,7 +94,7 @@
             var connection = teradataDbService.CreateConnection();
 
             // Assert
-            IsType<TdConnection>(connection);
+            Assert.IsType<TdConnection>(connection);
         }
 
         [Fact]
@@ -108,12 +107,12 @@
             var connectionStringBuilder = teradataDbService.CreateConnectionStringBuilder();
 
             // Assert
-            var teradataConnectionStringBuilder = IsType<TdConnectionStringBuilder>(connectionStringBuilder);
-            Equal(_teradataDbOptions.Object.Value.Database, teradataConnectionStringBuilder.Database);
-            Equal(_teradataDbOptions.Object.Value.DataSource, teradataConnectionStringBuilder.DataSource);
-            Equal(_teradataDbOptions.Object.Value.UserId, teradataConnectionStringBuilder.UserId);
-            Equal(_teradataDbOptions.Object.Value.Password, teradataConnectionStringBuilder.Password);
-            Equal(_teradataDbOptions.Object.Value.AuthenticationMechanism, teradataConnectionStringBuilder.AuthenticationMechanism);
+            var teradataConnectionStringBuilder = Assert.IsType<TdConnectionStringBuilder>(connectionStringBuilder);
+            Assert.Equal(_teradataDbOptions.Object.Value.Database, teradataConnectionStringBuilder.Database);
+            Assert.Equal(_teradataDbOptions.Object.Value.DataSource, teradataConnectionStringBuilder.DataSource);
+            Assert.Equal(_teradataDbOptions.Object.Value.UserId, teradataConnectionStringBuilder.UserId);
+            Assert.Equal(_teradataDbOptions.Object.Value.Password, teradataConnectionStringBuilder.Password);
+            Assert.Equal(_teradataDbOptions.Object.Value.AuthenticationMechanism, teradataConnectionStringBuilder.AuthenticationMechanism);
         }
 
         [Fact]
@@ -126,7 +125,7 @@
             var dataAdapter = teradataDbService.CreateDataAdapter();
 
             // Assert
-            IsType<TdDataAdapter>(dataAdapter);
+            Assert.IsType<TdDataAdapter>(dataAdapter);
         }
 
         [Fact]
@@ -139,7 +138,7 @@
             var parameter = teradataDbService.CreateParameter();
 
             // Assert
-            IsType<TdParameter>(parameter);
+            Assert.IsType<TdParameter>(parameter);
         }
     }
 }

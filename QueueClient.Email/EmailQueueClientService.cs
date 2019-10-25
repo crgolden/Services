@@ -1,6 +1,7 @@
 ﻿namespace Services
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
     using Common;
@@ -80,7 +81,7 @@
                 args: new object[] { UtcNow });
         }
 
-        private async Task ProcessMessagesAsync(Message message, CancellationToken cancellationToken)
+        private Task ProcessMessagesAsync(Message message, CancellationToken cancellationToken)
         {
             if (!message.UserProperties.ContainsKey("source") || !(message.UserProperties["source"] is string source) ||
                 !message.UserProperties.ContainsKey("destinations") || !(message.UserProperties["destinations"] is string[] destinations) ||
@@ -89,6 +90,26 @@
                 throw new ArgumentException("Invalid User Properties", nameof(message));
             }
 
+            return ProcessMessages(message, source, destinations, subject, cancellationToken);
+        }
+
+        private Task ExceptionReceivedHandler(ExceptionReceivedEventArgs exceptionReceivedEventArgs)
+        {
+            _logger.LogError(
+                eventId: new EventId((int)QueueClientError, $"{QueueClientError}"),
+                exception: exceptionReceivedEventArgs.Exception,
+                message: "Email queue client received exception {Context} at {Time}",
+                args: new object[] { exceptionReceivedEventArgs.ExceptionReceivedContext, UtcNow });
+            return CompletedTask;
+        }
+
+        private async Task ProcessMessages(
+            Message message,
+            string source,
+            IEnumerable<string> destinations,
+            string subject,
+            CancellationToken cancellationToken)
+        {
             _logger.LogInformation(
                 eventId: new EventId((int)QueueClientProcessing, $"{QueueClientProcessing}"),
                 message: "Email queue client processing at {Time}",
@@ -105,16 +126,6 @@
                 eventId: new EventId((int)QueueClientCompleted, $"{QueueClientCompleted}"),
                 message: "Email queue client completed at {Time}",
                 args: new object[] { UtcNow });
-        }
-
-        private Task ExceptionReceivedHandler(ExceptionReceivedEventArgs exceptionReceivedEventArgs)
-        {
-            _logger.LogError(
-                eventId: new EventId((int)QueueClientError, $"{QueueClientError}"),
-                exception: exceptionReceivedEventArgs.Exception,
-                message: "Email queue client received exception {Context} at {Time}",
-                args: new object[] { exceptionReceivedEventArgs.ExceptionReceivedContext, UtcNow });
-            return CompletedTask;
         }
     }
 }

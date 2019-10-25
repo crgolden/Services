@@ -31,10 +31,10 @@
         }
 
         /// <inheritdoc />
-        public async Task<Uri> Upload(
+        public Task<Uri> Upload(
             Stream? stream,
             string? fileName,
-            string? containerName,
+            string? folderName,
             LogLevel logLevel = Information,
             CancellationToken cancellationToken = default)
         {
@@ -48,47 +48,18 @@
                 throw new ArgumentNullException(nameof(fileName));
             }
 
-            if (IsNullOrEmpty(containerName))
+            if (IsNullOrEmpty(folderName))
             {
-                throw new ArgumentNullException(nameof(containerName));
+                throw new ArgumentNullException(nameof(folderName));
             }
 
-            try
-            {
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)StorageUploadStart, $"{StorageUploadStart}"),
-                    message: "Uploading file {@File} to container {@Container} at {@Time}",
-                    args: new object[] { fileName, containerName, UtcNow });
-                var blob = _cloudBlobClient
-                    .GetContainerReference(containerName)
-                    .GetBlockBlobReference(fileName);
-                await blob
-                    .UploadFromStreamAsync(stream, cancellationToken)
-                    .ConfigureAwait(false);
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)StorageUploadEnd, $"{StorageUploadEnd}"),
-                    message: "Uploaded file {@File} to container {@Container} with uri {@Uri} at {@Time}",
-                    args: new object[] { fileName, containerName, blob.Uri, UtcNow });
-                return blob.Uri;
-            }
-            catch (Exception e)
-            {
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)StorageUploadError, $"{StorageUploadError}"),
-                    exception: e,
-                    message: "Error uploading file {@File} to container {@Container} at {@Time}",
-                    args: new object[] { fileName, containerName, UtcNow });
-                throw;
-            }
+            return UploadAsync(stream, fileName, folderName, logLevel, cancellationToken);
         }
 
         /// <inheritdoc />
-        public async Task Delete(
+        public Task Delete(
             string? fileName,
-            string? containerName,
+            string? folderName,
             LogLevel logLevel = Information,
             CancellationToken cancellationToken = default)
         {
@@ -97,88 +68,32 @@
                 throw new ArgumentNullException(nameof(fileName));
             }
 
-            if (IsNullOrEmpty(containerName))
+            if (IsNullOrEmpty(folderName))
             {
-                throw new ArgumentNullException(nameof(containerName));
+                throw new ArgumentNullException(nameof(folderName));
             }
 
-            try
-            {
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)StorageRemoveStart, $"{StorageRemoveStart}"),
-                    message: "Removing file {@File} from container {@Container} at {@Time}",
-                    args: new object[] { fileName, containerName, UtcNow });
-                var blob = await _cloudBlobClient
-                    .GetContainerReference(containerName)
-                    .GetBlobReferenceFromServerAsync(fileName, cancellationToken)
-                    .ConfigureAwait(false);
-                var deleted = await blob.DeleteIfExistsAsync(cancellationToken)
-                    .ConfigureAwait(false);
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)StorageRemoveEnd, $"{StorageRemoveEnd}"),
-                    message: "Removed file {@File} from container {@Container} with response {@Response} at {@Time}",
-                    args: new object[] { fileName, containerName, deleted, UtcNow });
-            }
-            catch (Exception e)
-            {
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)StorageRemoveError, $"{StorageRemoveError}"),
-                    exception: e,
-                    message: "Error removing file {@File} from container {@Container} at {@Time}",
-                    args: new object[] { fileName, containerName, UtcNow });
-                throw;
-            }
+            return DeleteAsync(fileName, folderName, logLevel, cancellationToken);
         }
 
         /// <inheritdoc />
-        public async Task DeleteAll(
-            string? containerName,
+        public Task DeleteAll(
+            string? folderName,
             LogLevel logLevel = Information,
             CancellationToken cancellationToken = default)
         {
-            if (IsNullOrEmpty(containerName))
+            if (IsNullOrEmpty(folderName))
             {
-                throw new ArgumentNullException(containerName);
+                throw new ArgumentNullException(folderName);
             }
 
-            try
-            {
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)StorageRemoveAllStart, $"{StorageRemoveAllStart}"),
-                    message: "Removing from container {@Container} at {@Time}",
-                    args: new object[] { containerName, UtcNow });
-                var responses = await WhenAll(_cloudBlobClient
-                    .GetContainerReference(containerName)
-                    .ListBlobs(null, true)
-                    .OfType<CloudBlob>()
-                    .Select(x => x.DeleteIfExistsAsync(cancellationToken)))
-                    .ConfigureAwait(false);
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)StorageRemoveAllEnd, $"{StorageRemoveAllEnd}"),
-                    message: "Removed from container {@Container} with response {@Response} at {@Time}",
-                    args: new object[] { containerName, responses, UtcNow });
-            }
-            catch (Exception e)
-            {
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)StorageRemoveAllError, $"{StorageRemoveAllError}"),
-                    exception: e,
-                    message: "Error removing from container {@Container} at {@Time}",
-                    args: new object[] { containerName, UtcNow });
-                throw;
-            }
+            return DeleteAllAsync(folderName, logLevel, cancellationToken);
         }
 
         /// <inheritdoc />
         public Uri GetUrl(
             string? fileName,
-            string? containerName,
+            string? folderName,
             DateTime? expiration,
             LogLevel logLevel = Trace)
         {
@@ -187,9 +102,9 @@
                 throw new ArgumentNullException(nameof(fileName));
             }
 
-            if (IsNullOrEmpty(containerName))
+            if (IsNullOrEmpty(folderName))
             {
-                throw new ArgumentNullException(nameof(containerName));
+                throw new ArgumentNullException(nameof(folderName));
             }
 
             if (!expiration.HasValue)
@@ -209,16 +124,16 @@
                     logLevel: logLevel,
                     eventId: new EventId((int)StorageGetUrlStart, $"{StorageGetUrlStart}"),
                     message: "Getting policy {@Policy} for container {@Container} at {@Time}",
-                    args: new object[] { policy, containerName, UtcNow });
+                    args: new object[] { policy, folderName, UtcNow });
                 var blob = _cloudBlobClient
-                    .GetContainerReference(containerName)
+                    .GetContainerReference(folderName)
                     .GetBlockBlobReference(fileName);
                 var sharedAccessSignature = blob.GetSharedAccessSignature(policy);
                 _logger.Log(
                     logLevel: logLevel,
                     eventId: new EventId((int)StorageGetUrlEnd, $"{StorageGetUrlEnd}"),
                     message: "Got policy {@Policy} for container {@Container} with response {@Response} at {@Time}",
-                    args: new object[] { policy, containerName, sharedAccessSignature, UtcNow });
+                    args: new object[] { policy, folderName, sharedAccessSignature, UtcNow });
                 return new Uri(sharedAccessSignature);
             }
             catch (Exception e)
@@ -228,7 +143,119 @@
                     eventId: new EventId((int)StorageGetUrlError, $"{StorageGetUrlError}"),
                     exception: e,
                     message: "Error getting policy {@Policy} for container {@Container} at {@Time}",
-                    args: new object[] { policy, containerName, UtcNow });
+                    args: new object[] { policy, folderName, UtcNow });
+                throw;
+            }
+        }
+
+        private async Task<Uri> UploadAsync(
+            Stream stream,
+            string fileName,
+            string folderName,
+            LogLevel logLevel,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)StorageUploadStart, $"{StorageUploadStart}"),
+                    message: "Uploading file {@File} to container {@Container} at {@Time}",
+                    args: new object[] { fileName, folderName, UtcNow });
+                var blob = _cloudBlobClient
+                    .GetContainerReference(folderName)
+                    .GetBlockBlobReference(fileName);
+                await blob
+                    .UploadFromStreamAsync(stream, cancellationToken)
+                    .ConfigureAwait(false);
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)StorageUploadEnd, $"{StorageUploadEnd}"),
+                    message: "Uploaded file {@File} to container {@Container} with uri {@Uri} at {@Time}",
+                    args: new object[] { fileName, folderName, blob.Uri, UtcNow });
+                return blob.Uri;
+            }
+            catch (Exception e)
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)StorageUploadError, $"{StorageUploadError}"),
+                    exception: e,
+                    message: "Error uploading file {@File} to container {@Container} at {@Time}",
+                    args: new object[] { fileName, folderName, UtcNow });
+                throw;
+            }
+        }
+
+        private async Task DeleteAsync(
+            string fileName,
+            string folderName,
+            LogLevel logLevel,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)StorageRemoveStart, $"{StorageRemoveStart}"),
+                    message: "Removing file {@File} from container {@Container} at {@Time}",
+                    args: new object[] { fileName, folderName, UtcNow });
+                var blob = await _cloudBlobClient
+                    .GetContainerReference(folderName)
+                    .GetBlobReferenceFromServerAsync(fileName, cancellationToken)
+                    .ConfigureAwait(false);
+                var deleted = await blob.DeleteIfExistsAsync(cancellationToken)
+                    .ConfigureAwait(false);
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)StorageRemoveEnd, $"{StorageRemoveEnd}"),
+                    message: "Removed file {@File} from container {@Container} with response {@Response} at {@Time}",
+                    args: new object[] { fileName, folderName, deleted, UtcNow });
+            }
+            catch (Exception e)
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)StorageRemoveError, $"{StorageRemoveError}"),
+                    exception: e,
+                    message: "Error removing file {@File} from container {@Container} at {@Time}",
+                    args: new object[] { fileName, folderName, UtcNow });
+                throw;
+            }
+        }
+
+        private async Task DeleteAllAsync(
+            string folderName,
+            LogLevel logLevel,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)StorageRemoveAllStart, $"{StorageRemoveAllStart}"),
+                    message: "Removing from container {@Container} at {@Time}",
+                    args: new object[] { folderName, UtcNow });
+                var responses = await WhenAll(_cloudBlobClient
+                        .GetContainerReference(folderName)
+                        .ListBlobs(null, true)
+                        .OfType<CloudBlob>()
+                        .Select(x => x.DeleteIfExistsAsync(cancellationToken)))
+                    .ConfigureAwait(false);
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)StorageRemoveAllEnd, $"{StorageRemoveAllEnd}"),
+                    message: "Removed from container {@Container} with response {@Response} at {@Time}",
+                    args: new object[] { folderName, responses, UtcNow });
+            }
+            catch (Exception e)
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)StorageRemoveAllError, $"{StorageRemoveAllError}"),
+                    exception: e,
+                    message: "Error removing from container {@Container} at {@Time}",
+                    args: new object[] { folderName, UtcNow });
                 throw;
             }
         }

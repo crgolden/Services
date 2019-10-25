@@ -6,7 +6,6 @@
     using Moq;
     using Xunit;
     using static Common.DbServiceType;
-    using static Xunit.Assert;
 
     public class OracleDbServiceTests
     {
@@ -30,7 +29,7 @@
             static object TestCode() => new OracleDbService(default);
 
             // Assert
-            Throws<ArgumentNullException>(TestCode);
+            Assert.Throws<ArgumentNullException>(TestCode);
         }
 
         [Fact]
@@ -40,7 +39,7 @@
             var oracleDbService = new OracleDbService(_oracleDbOptions.Object);
 
             // Assert
-            Equal(Oracle, oracleDbService.Type);
+            Assert.Equal(Oracle, oracleDbService.Type);
         }
 
         [Fact]
@@ -54,7 +53,7 @@
             };
 
             // Assert
-            Equal(name, oracleDbService.Name);
+            Assert.Equal(name, oracleDbService.Name);
         }
 
         [Fact]
@@ -64,7 +63,7 @@
             var oracleDbService = new OracleDbService(_oracleDbOptions.Object);
 
             // Assert
-            True(oracleDbService.CanCreateDataSourceEnumerator);
+            Assert.True(oracleDbService.CanCreateDataSourceEnumerator);
         }
 
         [Fact]
@@ -77,7 +76,7 @@
             var command = oracleDbService.CreateCommand();
 
             // Assert
-            IsType<OracleCommand>(command);
+            Assert.IsType<OracleCommand>(command);
         }
 
         [Fact]
@@ -90,7 +89,7 @@
             var commandBuilder = oracleDbService.CreateCommandBuilder();
 
             // Assert
-            IsType<OracleCommandBuilder>(commandBuilder);
+            Assert.IsType<OracleCommandBuilder>(commandBuilder);
         }
 
         [Fact]
@@ -103,7 +102,7 @@
             var connection = oracleDbService.CreateConnection();
 
             // Assert
-            IsType<OracleConnection>(connection);
+            Assert.IsType<OracleConnection>(connection);
         }
 
         [Fact]
@@ -116,10 +115,10 @@
             var connectionStringBuilder = oracleDbService.CreateConnectionStringBuilder();
 
             // Assert
-            var oracleConnectionStringBuilder = IsType<OracleConnectionStringBuilder>(connectionStringBuilder);
-            Equal(_oracleDbOptions.Object.Value.DataSource, oracleConnectionStringBuilder.DataSource);
-            Equal(_oracleDbOptions.Object.Value.UserId, oracleConnectionStringBuilder.UserID);
-            Equal(_oracleDbOptions.Object.Value.Password, oracleConnectionStringBuilder.Password);
+            var oracleConnectionStringBuilder = Assert.IsType<OracleConnectionStringBuilder>(connectionStringBuilder);
+            Assert.Equal(_oracleDbOptions.Object.Value.DataSource, oracleConnectionStringBuilder.DataSource);
+            Assert.Equal(_oracleDbOptions.Object.Value.UserId, oracleConnectionStringBuilder.UserID);
+            Assert.Equal(_oracleDbOptions.Object.Value.Password, oracleConnectionStringBuilder.Password);
         }
 
         [Fact]
@@ -132,7 +131,7 @@
             var dataAdapter = oracleDbService.CreateDataAdapter();
 
             // Assert
-            IsType<OracleDataAdapter>(dataAdapter);
+            Assert.IsType<OracleDataAdapter>(dataAdapter);
         }
 
         [Fact]
@@ -145,7 +144,7 @@
             var parameter = oracleDbService.CreateParameter();
 
             // Assert
-            IsType<OracleParameter>(parameter);
+            Assert.IsType<OracleParameter>(parameter);
         }
 
         [Fact]
@@ -158,7 +157,7 @@
             var dataSourceEnumerator = oracleDbService.CreateDataSourceEnumerator();
 
             // Assert
-            IsType<OracleDataSourceEnumerator>(dataSourceEnumerator);
+            Assert.IsType<OracleDataSourceEnumerator>(dataSourceEnumerator);
         }
     }
 }

@@ -317,6 +317,9 @@ __pycache__/
 # OpenCover UI analysis results
 OpenCover/
 
+# SonarQube
+.sonarqube/
+
 # Azure Stream Analytics local run output 
 ASALocalRun/
 

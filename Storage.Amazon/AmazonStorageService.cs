@@ -30,10 +30,10 @@
         }
 
         /// <inheritdoc />
-        public async Task<Uri> Upload(
+        public Task<Uri> Upload(
             Stream? stream,
-            string? key,
-            string? bucketName,
+            string? fileName,
+            string? folderName,
             LogLevel logLevel = Information,
             CancellationToken cancellationToken = default)
         {
@@ -42,20 +42,119 @@
                 throw new ArgumentNullException(nameof(stream));
             }
 
-            if (IsNullOrEmpty(key))
+            if (IsNullOrEmpty(fileName))
             {
-                throw new ArgumentNullException(nameof(key));
+                throw new ArgumentNullException(nameof(fileName));
             }
 
-            if (IsNullOrEmpty(bucketName))
+            if (IsNullOrEmpty(folderName))
             {
-                throw new ArgumentNullException(nameof(bucketName));
+                throw new ArgumentNullException(nameof(folderName));
             }
 
+            return UploadAsync(stream, fileName, folderName, logLevel, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public Task Delete(
+            string? fileName,
+            string? folderName,
+            LogLevel logLevel = Information,
+            CancellationToken cancellationToken = default)
+        {
+            if (IsNullOrEmpty(fileName))
+            {
+                throw new ArgumentNullException(nameof(fileName));
+            }
+
+            if (IsNullOrEmpty(folderName))
+            {
+                throw new ArgumentNullException(nameof(folderName));
+            }
+
+            return DeleteAsync(fileName, folderName, logLevel, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public Task DeleteAll(
+            string? folderName,
+            LogLevel logLevel = Information,
+            CancellationToken cancellationToken = default)
+        {
+            if (IsNullOrEmpty(folderName))
+            {
+                throw new ArgumentNullException(nameof(folderName));
+            }
+
+            return DeleteAllAsync(folderName, logLevel, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public Uri GetUrl(
+            string? fileName,
+            string? folderName,
+            DateTime? expiration,
+            LogLevel logLevel = Trace)
+        {
+            if (IsNullOrEmpty(fileName))
+            {
+                throw new ArgumentNullException(nameof(fileName));
+            }
+
+            if (IsNullOrEmpty(folderName))
+            {
+                throw new ArgumentNullException(nameof(folderName));
+            }
+
+            if (!expiration.HasValue)
+            {
+                throw new ArgumentNullException(nameof(expiration));
+            }
+
+            var getPreSignedUrlRequest = new GetPreSignedUrlRequest
+            {
+                BucketName = folderName,
+                Key = fileName,
+                Expires = expiration.Value
+            };
+            try
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)StorageGetUrlStart, $"{StorageGetUrlStart}"),
+                    message: "Getting request {@Request} at {@Time}",
+                    args: new object[] { getPreSignedUrlRequest, UtcNow });
+                var preSignedUrl = _amazonS3.GetPreSignedURL(getPreSignedUrlRequest);
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)StorageGetUrlEnd, $"{StorageGetUrlEnd}"),
+                    message: "Got request {@Request} with response {@Response} at {@Time}",
+                    args: new object[] { getPreSignedUrlRequest, preSignedUrl, UtcNow });
+                return new Uri(preSignedUrl);
+            }
+            catch (Exception e)
+            {
+                _logger.Log(
+                    logLevel: logLevel,
+                    eventId: new EventId((int)StorageGetUrlError, $"{StorageGetUrlError}"),
+                    exception: e,
+                    message: "Error getting request {@Request} at {@Time}",
+                    args: new object[] { getPreSignedUrlRequest, UtcNow });
+                throw;
+            }
+        }
+
+        private async Task<Uri> UploadAsync(
+            Stream stream,
+            string fileName,
+            string folderName,
+            LogLevel logLevel,
+            CancellationToken cancellationToken)
+        {
             var putObjectRequest = new PutObjectRequest
             {
-                BucketName = bucketName,
-                Key = key,
+                BucketName = folderName,
+                Key = fileName,
                 InputStream = stream
             };
             try
@@ -73,7 +172,7 @@
                     eventId: new EventId((int)StorageUploadEnd, $"{StorageUploadEnd}"),
                     message: "Uploaded request {@Request} with response {@Response} at {@Time}",
                     args: new object[] { putObjectRequest, putObjectResponse, UtcNow });
-                return new Uri($"https://s3.amazonaws.com/{bucketName}/{key}");
+                return new Uri($"https://s3.amazonaws.com/{folderName}/{fileName}");
             }
             catch (Exception e)
             {
@@ -87,27 +186,16 @@
             }
         }
 
-        /// <inheritdoc />
-        public async Task Delete(
-            string? key,
-            string? bucketName,
-            LogLevel logLevel = Information,
-            CancellationToken cancellationToken = default)
+        private async Task DeleteAsync(
+            string fileName,
+            string folderName,
+            LogLevel logLevel,
+            CancellationToken cancellationToken)
         {
-            if (IsNullOrEmpty(key))
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
-            if (IsNullOrEmpty(bucketName))
-            {
-                throw new ArgumentNullException(nameof(bucketName));
-            }
-
             var deleteObjectRequest = new DeleteObjectRequest
             {
-                BucketName = bucketName,
-                Key = key
+                BucketName = folderName,
+                Key = fileName
             };
             try
             {
@@ -137,27 +225,21 @@
             }
         }
 
-        /// <inheritdoc />
-        public async Task DeleteAll(
-            string? bucketName,
-            LogLevel logLevel = Information,
-            CancellationToken cancellationToken = default)
+        private async Task DeleteAllAsync(
+            string folderName,
+            LogLevel logLevel,
+            CancellationToken cancellationToken)
         {
-            if (IsNullOrEmpty(bucketName))
-            {
-                throw new ArgumentNullException(nameof(bucketName));
-            }
-
             var listObjectsRequest = new ListObjectsV2Request
             {
-                BucketName = bucketName
+                BucketName = folderName
             };
             var listObjectsResponse = await _amazonS3
                 .ListObjectsV2Async(listObjectsRequest, cancellationToken)
                 .ConfigureAwait(false);
             var deleteObjectsRequest = new DeleteObjectsRequest
             {
-                BucketName = bucketName,
+                BucketName = folderName,
                 Objects = listObjectsResponse.S3Objects.Select(s3Object => new KeyVersion
                 {
                     Key = s3Object.Key
@@ -187,61 +269,6 @@
                     exception: e,
                     message: "Error removing request {@Request} at {@Time}",
                     args: new object[] { deleteObjectsRequest, UtcNow });
-                throw;
-            }
-        }
-
-        /// <inheritdoc />
-        public Uri GetUrl(
-            string? key,
-            string? bucketName,
-            DateTime? expiration,
-            LogLevel logLevel = Trace)
-        {
-            if (IsNullOrEmpty(key))
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
-            if (IsNullOrEmpty(bucketName))
-            {
-                throw new ArgumentNullException(nameof(bucketName));
-            }
-
-            if (!expiration.HasValue)
-            {
-                throw new ArgumentNullException(nameof(expiration));
-            }
-
-            var getPreSignedUrlRequest = new GetPreSignedUrlRequest
-            {
-                BucketName = bucketName,
-                Key = key,
-                Expires = expiration.Value
-            };
-            try
-            {
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)StorageGetUrlStart, $"{StorageGetUrlStart}"),
-                    message: "Getting request {@Request} at {@Time}",
-                    args: new object[] { getPreSignedUrlRequest, UtcNow });
-                var preSignedUrl = _amazonS3.GetPreSignedURL(getPreSignedUrlRequest);
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)StorageGetUrlEnd, $"{StorageGetUrlEnd}"),
-                    message: "Got request {@Request} with response {@Response} at {@Time}",
-                    args: new object[] { getPreSignedUrlRequest, preSignedUrl, UtcNow });
-                return new Uri(preSignedUrl);
-            }
-            catch (Exception e)
-            {
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)StorageGetUrlError, $"{StorageGetUrlError}"),
-                    exception: e,
-                    message: "Error getting request {@Request} at {@Time}",
-                    args: new object[] { getPreSignedUrlRequest, UtcNow });
                 throw;
             }
         }

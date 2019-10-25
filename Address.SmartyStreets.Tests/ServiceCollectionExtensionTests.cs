@@ -11,7 +11,6 @@
     using static System.Linq.Enumerable;
     using static System.StringComparison;
     using static Moq.Mock;
-    using static Xunit.Assert;
     using InternationalClient = global::SmartyStreets.InternationalStreetApi.Client;
     using InternationalLookup = global::SmartyStreets.InternationalStreetApi.Lookup;
     using UsClient = global::SmartyStreets.USStreetApi.Client;
@@ -27,8 +26,8 @@
             object TestCode() => services.AddSmartyStreetsAddressService(default);
 
             // Act / Assert
-            var exception = Throws<ArgumentNullException>(TestCode);
-            Equal("configuration", exception.ParamName);
+            var exception = Assert.Throws<ArgumentNullException>(TestCode);
+            Assert.Equal("configuration", exception.ParamName);
         }
 
         [Fact]
@@ -42,9 +41,9 @@
             object TestCode() => services.AddSmartyStreetsAddressService(configuration);
 
             // Act / Assert
-            var exception = Throws<ArgumentException>(TestCode);
-            Contains($"{nameof(SmartyStreetsAddressOptions)} section doesn't exist", exception.Message, CurrentCulture);
-            Equal("configuration", exception.ParamName);
+            var exception = Assert.Throws<ArgumentException>(TestCode);
+            Assert.Contains($"{nameof(SmartyStreetsAddressOptions)} section doesn't exist", exception.Message, CurrentCulture);
+            Assert.Equal("configuration", exception.ParamName);
         }
 
         [Theory]
@@ -70,9 +69,9 @@
             object TestCode() => services.AddSmartyStreetsAddressService(configuration);
 
             // Act / Assert
-            var exception = Throws<ArgumentException>(TestCode);
-            Contains($"{nameof(SmartyStreetsAddressOptions)} section is invalid", exception.Message, CurrentCulture);
-            Equal("configuration", exception.ParamName);
+            var exception = Assert.Throws<ArgumentException>(TestCode);
+            Assert.Contains($"{nameof(SmartyStreetsAddressOptions)} section is invalid", exception.Message, CurrentCulture);
+            Assert.Equal("configuration", exception.ParamName);
         }
 
         [Fact]
@@ -101,11 +100,11 @@
             // Assert
             using var provider = response.BuildServiceProvider();
             var usClient = provider.GetRequiredService<IClient<UsLookup>>();
-            IsType<UsClient>(usClient);
+            Assert.IsType<UsClient>(usClient);
             var internationalClient = provider.GetRequiredService<IClient<InternationalLookup>>();
-            IsType<InternationalClient>(internationalClient);
+            Assert.IsType<InternationalClient>(internationalClient);
             var addressService = provider.GetRequiredService<IAddressService>();
-            IsType<SmartyStreetsAddressService>(addressService);
+            Assert.IsType<SmartyStreetsAddressService>(addressService);
         }
     }
 }
