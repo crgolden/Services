@@ -9,7 +9,6 @@
     <NoWarn>1591</NoWarn>
     <CodeAnalysisRuleSet>..\.ruleset</CodeAnalysisRuleSet>
     <SkipDefaultEditorConfigAsAdditionalFile>true</SkipDefaultEditorConfigAsAdditionalFile>
-    <Platforms>x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
