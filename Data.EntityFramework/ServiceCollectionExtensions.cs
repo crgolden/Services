@@ -14,7 +14,7 @@
     {
         public static IServiceCollection AddEntityFrameworkDataService<T>(
             this IServiceCollection services,
-            IConfiguration? configuration)
+            IConfiguration configuration)
             where T : DbContext
         {
             if (configuration == default)
@@ -48,7 +48,7 @@
 
         private static Action<DbContextOptionsBuilder> GetBuilderAction(
             DatabaseType? databaseType,
-            EntityFrameworkDataOptions? options)
+            EntityFrameworkDataOptions options)
         {
             return databaseType switch
             {
@@ -59,32 +59,23 @@
         }
 
         private static Action<DbContextOptionsBuilder> GetSqlServerBuilder(
-            EntityFrameworkDataOptions? options)
+            EntityFrameworkDataOptions options)
         {
             if (options?.SqlServerOptions == default)
             {
-                throw new ArgumentException(
-                    message: $"{nameof(SqlServerOptions)} section is invalid",
-                    paramName: nameof(options));
+                throw new ArgumentException($"{nameof(SqlServerOptions)} section is invalid", nameof(options));
             }
 
             return builder =>
             {
-                builder.UseSqlServer(
-                    connectionString: options.SqlServerOptions.GetConnectionString(),
-                    sqlServerOptionsAction: sqlOptions =>
+                builder.UseSqlServer(options.SqlServerOptions.ConnectionString, sqlOptions =>
+                {
+                    sqlOptions.EnableRetryOnFailure(15, FromSeconds(30), default);
+                    if (!IsNullOrEmpty(options.AssemblyName) && !IsNullOrWhiteSpace(options.AssemblyName))
                     {
-                        sqlOptions.EnableRetryOnFailure(
-                            maxRetryCount: 15,
-                            maxRetryDelay: FromSeconds(30),
-                            errorNumbersToAdd: default);
-                        if (IsNullOrEmpty(options.AssemblyName))
-                        {
-                            return;
-                        }
-
                         sqlOptions.MigrationsAssembly(options.AssemblyName);
-                    });
+                    }
+                });
                 if (options.UseLazyLoadingProxies)
                 {
                     builder.UseLazyLoadingProxies();
@@ -93,7 +84,7 @@
         }
 
         private static Action<DbContextOptionsBuilder> GetSqliteBuilder(
-            EntityFrameworkDataOptions? options)
+            EntityFrameworkDataOptions options)
         {
             if (options?.SqliteOptions == default)
             {

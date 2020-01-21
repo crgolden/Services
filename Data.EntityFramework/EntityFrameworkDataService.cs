@@ -1,45 +1,46 @@
 ﻿namespace Services
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Threading;
     using System.Threading.Tasks;
     using Common;
+    using JetBrains.Annotations;
     using Microsoft.EntityFrameworkCore;
-    using Microsoft.Extensions.Logging;
-    using static System.DateTime;
-    using static Common.DataServiceType;
-    using static Common.EventId;
-    using static Microsoft.EntityFrameworkCore.EntityState;
-    using static Microsoft.Extensions.Logging.LogLevel;
-    using EventId = Microsoft.Extensions.Logging.EventId;
+    using static System.String;
+    using static System.Threading.Tasks.Task;
 
     /// <inheritdoc />
+    [PublicAPI]
     public class EntityFrameworkDataService : IDataService
     {
-        private readonly DbContext _context;
-        private readonly ILogger<EntityFrameworkDataService> _logger;
-
-        public EntityFrameworkDataService(
-            DbContext? context,
-            ILogger<EntityFrameworkDataService>? logger)
+        /// <summary>Initializes a new instance of the <see cref="EntityFrameworkDataService"/> class.</summary>
+        /// <param name="context">The <see cref="DbContext"/>.</param>
+        /// <param name="name">The name (default is "EntityFrameworkCore").</param>
+        /// <exception cref="ArgumentNullException"><paramref name="context"/> is <see langword="null" /> or <paramref name="name"/> is <see langword="null" />.</exception>
+        public EntityFrameworkDataService(DbContext context, string name = nameof(Microsoft.EntityFrameworkCore))
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            if (IsNullOrEmpty(name) || IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
+            Name = name;
+            Context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         /// <inheritdoc />
-        public string? Name { get; set; }
+        public string Name { get; }
+
+        /// <summary>Gets the <see cref="DbContext"/>.</summary>
+        /// <value>The <see cref="DbContext"/>.</value>
+        protected DbContext Context { get; }
 
         /// <inheritdoc />
-        public DataServiceType Type => EntityFramework;
-
-        /// <inheritdoc />
-        public Task<T> CreateAsync<T>(
-            T? record,
-            LogLevel logLevel = Information,
-            CancellationToken cancellationToken = default)
+        /// <exception cref="ArgumentNullException"><paramref name="record"/> is <see langword="null" />.</exception>
+        public virtual Task<T> CreateAsync<T>(T record, CancellationToken cancellationToken = default)
             where T : class
         {
             if (record == default)
@@ -47,30 +48,72 @@
                 throw new ArgumentNullException(nameof(record));
             }
 
-            return Create(record, logLevel, cancellationToken);
+            Context.Set<T>().Add(record);
+            return FromResult(record);
         }
 
         /// <inheritdoc />
-        public Task<T?> ReadAsync<T>(
-            Expression<Func<T, bool>>? expression,
-            LogLevel logLevel = Information,
-            CancellationToken cancellationToken = default)
+        /// <exception cref="ArgumentNullException"><paramref name="records"/> is <see langword="null" />.</exception>
+        public virtual Task<IEnumerable<T>> CreateRangeAsync<T>(IEnumerable<T> records, CancellationToken cancellationToken = default)
             where T : class
         {
-            if (expression == default)
+            if (records == null)
             {
-                throw new ArgumentNullException(nameof(expression));
+                throw new ArgumentNullException(nameof(records));
             }
 
-            return Read(expression, logLevel, cancellationToken);
+            var enumerated = records.ToArray();
+            Context.Set<T>().AddRange(enumerated);
+            return FromResult(enumerated.AsEnumerable());
         }
 
         /// <inheritdoc />
-        public Task UpdateAsync<T>(
-            Expression<Func<T, bool>>? expression,
-            T? record,
-            LogLevel logLevel = Information,
-            CancellationToken cancellationToken = default)
+        /// <exception cref="ArgumentNullException"><paramref name="predicate"/> is <see langword="null" />.</exception>
+        public virtual Task DeleteAsync<T>(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
+            where T : class
+        {
+            if (predicate == default)
+            {
+                throw new ArgumentNullException(nameof(predicate));
+            }
+
+            async Task DeleteAsync()
+            {
+                var record = await Context.Set<T>().SingleOrDefaultAsync(predicate, cancellationToken).ConfigureAwait(false);
+                if (record == default)
+                {
+                    return;
+                }
+
+                Context.Set<T>().Remove(record);
+            }
+
+            return DeleteAsync();
+        }
+
+        /// <inheritdoc />
+        /// <exception cref="ArgumentNullException"><paramref name="keyValuePairs"/> is <see langword="null" />.</exception>
+        public virtual Task DeleteRangeAsync<T>(IDictionary<Expression<Func<T, bool>>, T> keyValuePairs, CancellationToken cancellationToken = default)
+            where T : class
+        {
+            if (keyValuePairs == default)
+            {
+                throw new ArgumentNullException(nameof(keyValuePairs));
+            }
+
+            Context.Set<T>().RemoveRange(keyValuePairs.Values);
+            return CompletedTask;
+        }
+
+        /// <inheritdoc />
+        public virtual Task SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            return Context.SaveChangesAsync(cancellationToken);
+        }
+
+        /// <inheritdoc />
+        /// <exception cref="ArgumentNullException"><paramref name="predicate"/> or <paramref name="record"/> is <see langword="null" />.</exception>
+        public virtual Task UpdateAsync<T>(Expression<Func<T, bool>> predicate, T record, CancellationToken cancellationToken = default)
             where T : class
         {
             if (record == default)
@@ -78,183 +121,641 @@
                 throw new ArgumentNullException(nameof(record));
             }
 
-            return Update(record, logLevel, cancellationToken);
+            Context.Set<T>().Update(record);
+            return CompletedTask;
         }
 
         /// <inheritdoc />
-        public Task DeleteAsync<T>(
-            Expression<Func<T, bool>>? expression,
-            LogLevel logLevel = Information,
-            CancellationToken cancellationToken = default)
+        /// <exception cref="ArgumentNullException"><paramref name="keyValuePairs"/> is <see langword="null" />.</exception>
+        public virtual Task UpdateRangeAsync<T>(IDictionary<Expression<Func<T, bool>>, T> keyValuePairs, CancellationToken cancellationToken = default)
             where T : class
         {
-            if (expression == default)
+            if (keyValuePairs == null)
             {
-                throw new ArgumentNullException(nameof(expression));
+                throw new ArgumentNullException(nameof(keyValuePairs));
             }
 
-            return Delete(expression, logLevel, cancellationToken);
+            Context.Set<T>().UpdateRange(keyValuePairs.Values);
+            return CompletedTask;
         }
 
         /// <inheritdoc />
-        public IQueryable<T> List<T>(LogLevel logLevel = Information)
-            where T : class
+        public virtual Task<bool> AnyAsync<T>(IQueryable<T> source, CancellationToken cancellationToken = default)
         {
-            var typeName = typeof(T).Name;
-            try
+            if (source == null)
             {
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataListStart, $"{DataListStart}"),
-                    message: "Listing type {@Type} at {@Time}",
-                    args: new object[] { typeName, UtcNow });
-                var queryable = _context.Set<T>();
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataListEnd, $"{DataListEnd}"),
-                    message: "Listed type {@Type} at {@Time}",
-                    args: new object[] { typeName, UtcNow });
-                return queryable;
+                throw new ArgumentNullException(nameof(source));
             }
-            catch (Exception e)
-            {
-                _logger.LogError(
-                    eventId: new EventId((int)DataListError, $"{DataListError}"),
-                    exception: e,
-                    message: "Error listing type {@Type} at {@Time}",
-                    args: new object[] { typeName, UtcNow });
-                throw;
-            }
+
+            return source.AnyAsync(cancellationToken);
         }
 
-        private async Task<T> Create<T>(
-            T record,
-            LogLevel logLevel,
-            CancellationToken cancellationToken)
-            where T : class
+        /// <inheritdoc />
+        public virtual Task<bool> AnyAsync<T>(IQueryable<T> source, Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
         {
-            try
+            if (source == null)
             {
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataCreateStart, $"{DataCreateStart}"),
-                    message: "Creating entity {@Entity} at {@Time}",
-                    args: new object[] { record, UtcNow });
-                _context.Entry(record).State = Added;
-                await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataCreateEnd, $"{DataCreateEnd}"),
-                    message: "Created entity {@Entity} at {@Time}",
-                    args: new object[] { record, UtcNow });
-                return record;
+                throw new ArgumentNullException(nameof(source));
             }
-            catch (Exception e)
+
+            if (predicate == default)
             {
-                _logger.LogError(
-                    eventId: new EventId((int)DataCreateError, $"{DataCreateError}"),
-                    exception: e,
-                    message: "Error creating entity {@Entity} at {@Time}",
-                    args: new object[] { record, UtcNow });
-                throw;
+                throw new ArgumentNullException(nameof(predicate));
             }
+
+            return source.AnyAsync(predicate, cancellationToken);
         }
 
-        private async Task<T?> Read<T>(
-            Expression<Func<T, bool>> expression,
-            LogLevel logLevel,
-            CancellationToken cancellationToken)
-            where T : class
+        /// <inheritdoc />
+        public virtual Task<decimal?> AverageAsync<T>(IQueryable<T> source, Expression<Func<T, decimal?>> selector, CancellationToken cancellationToken = default)
         {
-            try
+            if (source == null)
             {
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataReadStart, $"{DataReadStart}"),
-                    message: "Reading predicate {@Predicate} at {@Time}",
-                    args: new object[] { expression.Body, UtcNow });
-                var entity = await _context.Set<T>().SingleOrDefaultAsync(expression, cancellationToken).ConfigureAwait(false);
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataReadEnd, $"{DataReadEnd}"),
-                    message: "Read entity {@Entity} with predicate {@Predicate} at {@Time}",
-                    args: new object[] { entity, expression.Body, UtcNow });
-                return entity;
+                throw new ArgumentNullException(nameof(source));
             }
-            catch (Exception e)
+
+            if (selector == default)
             {
-                _logger.LogError(
-                    eventId: new EventId((int)DataReadError, $"{DataReadError}"),
-                    exception: e,
-                    message: "Error reading predicate {@Predicate} at {@Time}",
-                    args: new object[] { expression.Body, UtcNow });
-                throw;
+                throw new ArgumentNullException(nameof(selector));
             }
+
+            return source.AverageAsync(selector, cancellationToken);
         }
 
-        private async Task Update<T>(
-            T record,
-            LogLevel logLevel,
-            CancellationToken cancellationToken)
-            where T : class
+        /// <inheritdoc />
+        public virtual Task<decimal> AverageAsync<T>(IQueryable<T> source, Expression<Func<T, decimal>> selector, CancellationToken cancellationToken = default)
         {
-            try
+            if (source == null)
             {
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataUpdateStart, $"{DataUpdateStart}"),
-                    message: "Updating entity {@Entity} at {@Time}",
-                    args: new object[] { record, UtcNow });
-                _context.Entry(record).State = Modified;
-                await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataUpdateEnd, $"{DataUpdateEnd}"),
-                    message: "Updated entity {@Entity} at {@Time}",
-                    args: new object[] { record, UtcNow });
+                throw new ArgumentNullException(nameof(source));
             }
-            catch (Exception e)
+
+            if (selector == default)
             {
-                _logger.LogError(
-                    eventId: new EventId((int)DataUpdateError, $"{DataUpdateError}"),
-                    exception: e,
-                    message: "Error updating entity {@Entity} at {@Time}",
-                    args: new object[] { record, UtcNow });
-                throw;
+                throw new ArgumentNullException(nameof(selector));
             }
+
+            return source.AverageAsync(selector, cancellationToken);
         }
 
-        private async Task Delete<T>(
-            Expression<Func<T, bool>> expression,
-            LogLevel logLevel,
-            CancellationToken cancellationToken)
+        /// <inheritdoc />
+        public virtual Task<double?> AverageAsync<T>(IQueryable<T> source, Expression<Func<T, double?>> selector, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (selector == default)
+            {
+                throw new ArgumentNullException(nameof(selector));
+            }
+
+            return source.AverageAsync(selector, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<double> AverageAsync<T>(IQueryable<T> source, Expression<Func<T, double>> selector, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (selector == default)
+            {
+                throw new ArgumentNullException(nameof(selector));
+            }
+
+            return source.AverageAsync(selector, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<float?> AverageAsync<T>(IQueryable<T> source, Expression<Func<T, float?>> selector, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (selector == default)
+            {
+                throw new ArgumentNullException(nameof(selector));
+            }
+
+            return source.AverageAsync(selector, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<float> AverageAsync<T>(IQueryable<T> source, Expression<Func<T, float>> selector, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (selector == default)
+            {
+                throw new ArgumentNullException(nameof(selector));
+            }
+
+            return source.AverageAsync(selector, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<double?> AverageAsync<T>(IQueryable<T> source, Expression<Func<T, int?>> selector, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (selector == default)
+            {
+                throw new ArgumentNullException(nameof(selector));
+            }
+
+            return source.AverageAsync(selector, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<double> AverageAsync<T>(IQueryable<T> source, Expression<Func<T, int>> selector, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (selector == default)
+            {
+                throw new ArgumentNullException(nameof(selector));
+            }
+
+            return source.AverageAsync(selector, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<double?> AverageAsync<T>(IQueryable<T> source, Expression<Func<T, long?>> selector, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (selector == default)
+            {
+                throw new ArgumentNullException(nameof(selector));
+            }
+
+            return source.AverageAsync(selector, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<double> AverageAsync<T>(IQueryable<T> source, Expression<Func<T, long>> selector, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (selector == default)
+            {
+                throw new ArgumentNullException(nameof(selector));
+            }
+
+            return source.AverageAsync(selector, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<int> CountAsync<T>(IQueryable<T> source, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            return source.CountAsync(cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<int> CountAsync<T>(IQueryable<T> source, Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (predicate == default)
+            {
+                throw new ArgumentNullException(nameof(predicate));
+            }
+
+            return source.CountAsync(predicate, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<T> FirstAsync<T>(IQueryable<T> source, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            return source.FirstAsync(cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<T> FirstAsync<T>(IQueryable<T> source, Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (predicate == default)
+            {
+                throw new ArgumentNullException(nameof(predicate));
+            }
+
+            return source.FirstAsync(predicate, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<T> FirstOrDefaultAsync<T>(IQueryable<T> source, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            return source.FirstOrDefaultAsync(cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<T> FirstOrDefaultAsync<T>(IQueryable<T> source, Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (predicate == default)
+            {
+                throw new ArgumentNullException(nameof(predicate));
+            }
+
+            return source.FirstOrDefaultAsync(predicate, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task ForEachAsync<T>(IQueryable<T> source, Action<T> action, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (action == default)
+            {
+                throw new ArgumentNullException(nameof(action));
+            }
+
+            return source.ForEachAsync(action, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public ValueTask<T> GetAsync<T>(IQueryable<T> source, object[] keyValues, CancellationToken cancellationToken = default)
             where T : class
         {
-            try
+            if (source == null)
             {
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataDeleteStart, $"{DataDeleteStart}"),
-                    message: "Deleting with predicate {@Predicate} at {@Time}",
-                    args: new object[] { expression.Body, UtcNow });
-                var entity = await _context.Set<T>().SingleOrDefaultAsync(expression, cancellationToken).ConfigureAwait(false);
-                _context.Entry(entity).State = Deleted;
-                await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)DataDeleteEnd, $"{DataDeleteEnd}"),
-                    message: "Deleted entity {@Entity} with predicate {@Predicate} at {@Time}",
-                    args: new object[] { entity, expression.Body, UtcNow });
+                throw new ArgumentNullException(nameof(source));
             }
-            catch (Exception e)
+
+            if (keyValues == default)
             {
-                _logger.LogError(
-                    eventId: new EventId((int)DataDeleteError, $"{DataDeleteError}"),
-                    exception: e,
-                    message: "Error deleting with predicate {@Predicate} at {@Time}",
-                    args: new object[] { expression.Body, UtcNow });
-                throw;
+                throw new ArgumentNullException(nameof(keyValues));
             }
+
+            if (keyValues.Length == 0)
+            {
+                throw new ArgumentException("Key values cannot be empty", nameof(keyValues));
+            }
+
+            return Context.Set<T>().FindAsync(keyValues, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<long> LongCountAsync<T>(IQueryable<T> source, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            return source.LongCountAsync(cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<long> LongCountAsync<T>(IQueryable<T> source, Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (predicate == default)
+            {
+                throw new ArgumentNullException(nameof(predicate));
+            }
+
+            return source.LongCountAsync(predicate, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<T> MaxAsync<T>(IQueryable<T> source, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            return source.MaxAsync(cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<TResult> MaxAsync<T, TResult>(IQueryable<T> source, Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (selector == default)
+            {
+                throw new ArgumentNullException(nameof(selector));
+            }
+
+            return source.MaxAsync(selector, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<T> MinAsync<T>(IQueryable<T> source, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            return source.MinAsync(cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<TResult> MinAsync<T, TResult>(IQueryable<T> source, Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (selector == default)
+            {
+                throw new ArgumentNullException(nameof(selector));
+            }
+
+            return source.MinAsync(selector, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual IQueryable<T> Query<T>()
+            where T : class
+        {
+            return Context.Set<T>();
+        }
+
+        /// <inheritdoc />
+        public virtual Task<T> SingleAsync<T>(IQueryable<T> source, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            return source.SingleAsync(cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<T> SingleAsync<T>(IQueryable<T> source, Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (predicate == default)
+            {
+                throw new ArgumentNullException(nameof(predicate));
+            }
+
+            return source.SingleAsync(predicate, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<T> SingleOrDefaultAsync<T>(IQueryable<T> source, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            return source.SingleOrDefaultAsync(cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<T> SingleOrDefaultAsync<T>(IQueryable<T> source, Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (predicate == default)
+            {
+                throw new ArgumentNullException(nameof(predicate));
+            }
+
+            return source.SingleOrDefaultAsync(predicate, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<decimal?> SumAsync<T>(IQueryable<T> source, Expression<Func<T, decimal?>> selector, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (selector == default)
+            {
+                throw new ArgumentNullException(nameof(selector));
+            }
+
+            return source.SumAsync(selector, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<decimal> SumAsync<T>(IQueryable<T> source, Expression<Func<T, decimal>> selector, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (selector == default)
+            {
+                throw new ArgumentNullException(nameof(selector));
+            }
+
+            return source.SumAsync(selector, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<double?> SumAsync<T>(IQueryable<T> source, Expression<Func<T, double?>> selector, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (selector == default)
+            {
+                throw new ArgumentNullException(nameof(selector));
+            }
+
+            return source.SumAsync(selector, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<double> SumAsync<T>(IQueryable<T> source, Expression<Func<T, double>> selector, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (selector == default)
+            {
+                throw new ArgumentNullException(nameof(selector));
+            }
+
+            return source.SumAsync(selector, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<float?> SumAsync<T>(IQueryable<T> source, Expression<Func<T, float?>> selector, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (selector == default)
+            {
+                throw new ArgumentNullException(nameof(selector));
+            }
+
+            return source.SumAsync(selector, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<float> SumAsync<T>(IQueryable<T> source, Expression<Func<T, float>> selector, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (selector == default)
+            {
+                throw new ArgumentNullException(nameof(selector));
+            }
+
+            return source.SumAsync(selector, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<int?> SumAsync<T>(IQueryable<T> source, Expression<Func<T, int?>> selector, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (selector == default)
+            {
+                throw new ArgumentNullException(nameof(selector));
+            }
+
+            return source.SumAsync(selector, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<int> SumAsync<T>(IQueryable<T> source, Expression<Func<T, int>> selector, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (selector == default)
+            {
+                throw new ArgumentNullException(nameof(selector));
+            }
+
+            return source.SumAsync(selector, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<long> SumAsync<T>(IQueryable<T> source, Expression<Func<T, long>> selector, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (selector == default)
+            {
+                throw new ArgumentNullException(nameof(selector));
+            }
+
+            return source.SumAsync(selector, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<long?> SumAsync<T>(IQueryable<T> source, Expression<Func<T, long?>> selector, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (selector == default)
+            {
+                throw new ArgumentNullException(nameof(selector));
+            }
+
+            return source.SumAsync(selector, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public virtual Task<List<T>> ToListAsync<T>(IQueryable<T> source, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            return source.ToListAsync(cancellationToken);
         }
     }
 }

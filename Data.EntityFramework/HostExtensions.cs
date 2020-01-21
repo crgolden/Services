@@ -1,37 +1,32 @@
-﻿namespace Services
+﻿namespace Microsoft.Extensions.Hosting
 {
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.EntityFrameworkCore;
-    using Microsoft.Extensions.DependencyInjection;
-    using Microsoft.Extensions.Hosting;
+    using DependencyInjection;
+    using EntityFrameworkCore;
 
     public static class HostExtensions
     {
-        public static Task<IHost> MigrateDatabaseAsync(
-            this IHost host,
-            CancellationToken cancellationToken = default)
+        public static Task<IHost> MigrateDatabaseAsync(this IHost host, CancellationToken cancellationToken = default)
         {
             if (host == default)
             {
                 throw new ArgumentNullException(nameof(host));
             }
 
-            return MigrateDatabase(host, cancellationToken);
-        }
-
-        private static async Task<IHost> MigrateDatabase(
-            IHost host,
-            CancellationToken cancellationToken)
-        {
-            using (var scope = host.Services.CreateScope())
+            async Task<IHost> MigrateDatabase()
             {
-                await using var context = scope.ServiceProvider.GetRequiredService<DbContext>();
-                await context.Database.MigrateAsync(cancellationToken).ConfigureAwait(false);
+                using (var scope = host.Services.CreateScope())
+                {
+                    await using var context = scope.ServiceProvider.GetRequiredService<DbContext>();
+                    await context.Database.MigrateAsync(cancellationToken).ConfigureAwait(false);
+                }
+
+                return host;
             }
 
-            return host;
+            return MigrateDatabase();
         }
     }
 }
