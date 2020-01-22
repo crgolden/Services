@@ -199,7 +199,7 @@
             {
                 client = new MongoClient(options.MongoUrl);
             }
-            else if (!IsNullOrEmpty(options.ConnectionString) && !IsNullOrWhiteSpace(options.ConnectionString))
+            else if (!IsNullOrWhiteSpace(options.ConnectionString))
             {
                 client = new MongoClient(options.ConnectionString);
             }

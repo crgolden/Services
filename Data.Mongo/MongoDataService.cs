@@ -30,7 +30,7 @@
         /// <exception cref="ArgumentNullException"><paramref name="mongoClient"/> is <see langword="null" /> or <paramref name="mongoDataOptions"/> is <see langword="null" /> or <paramref name="name"/> is <see langword="null" />.</exception>
         public MongoDataService(IMongoClient mongoClient, MongoDataOptions mongoDataOptions, string name = nameof(MongoDB))
         {
-            if (IsNullOrEmpty(name) || IsNullOrWhiteSpace(name))
+            if (IsNullOrWhiteSpace(name))
             {
                 throw new ArgumentNullException(nameof(name));
             }

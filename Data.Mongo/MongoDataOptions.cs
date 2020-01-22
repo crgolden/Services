@@ -57,6 +57,10 @@
         /// <value>The create collection options.</value>
         public CreateCollectionOptions CreateCollectionOptions { get; set; } = new CreateCollectionOptions();
 
+        /// <summary>Gets or sets the options used by the <see cref="MongoDataService"/> to create the indexes.</summary>
+        /// <value>The create indexes options.</value>
+        public CreateManyIndexesOptions CreateManyIndexesOptions { get; set; } = new CreateManyIndexesOptions();
+
         /// <summary>Gets or sets the options used by the <see cref="MongoDataService"/> to handle the client session.</summary>
         /// <value>The client session options.</value>
         public ClientSessionOptions ClientSessionOptions { get; set; } = new ClientSessionOptions();

@@ -19,8 +19,7 @@
         {
             if (options.MongoClientSettings != default)
             {
-                if (IsNullOrEmpty(options.MongoClientSettings.ApplicationName) ||
-                    IsNullOrWhiteSpace(options.MongoClientSettings.ApplicationName))
+                if (IsNullOrWhiteSpace(options.MongoClientSettings.ApplicationName))
                 {
                     options.MongoClientSettings.ApplicationName = name;
                 }
@@ -69,14 +68,14 @@
                     }.ToMongoUrl();
                 }
 
-                if (IsNullOrEmpty(options.ConnectionString) || IsNullOrWhiteSpace(options.ConnectionString))
+                if (IsNullOrWhiteSpace(options.ConnectionString))
                 {
                     options.ConnectionString = options.MongoUrl.ToString();
                 }
             }
             else
             {
-                if (!IsNullOrEmpty(options.ConnectionString) && !IsNullOrWhiteSpace(options.ConnectionString))
+                if (!IsNullOrWhiteSpace(options.ConnectionString))
                 {
                     options.MongoClientSettings = FromConnectionString(options.ConnectionString);
                     if (options.MongoUrl == default)

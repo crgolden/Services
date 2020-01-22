@@ -14,7 +14,7 @@
         public ValidateOptionsResult Validate(string name, MongoDataOptions options)
         {
             var failures = new List<string>();
-            if (IsNullOrEmpty(options.DatabaseName) || IsNullOrWhiteSpace(options.DatabaseName))
+            if (IsNullOrWhiteSpace(options.DatabaseName))
             {
                 failures.Add(MissingDatabaseInfo(name));
             }
