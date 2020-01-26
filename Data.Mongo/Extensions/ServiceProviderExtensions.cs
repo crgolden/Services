@@ -92,21 +92,26 @@
             return InitializeCollectionsAsync();
         }
 
-        public static Task<IServiceProvider> BuildIndexesAsync<T>(
+        /// <summary>Builds the indexes specified in <paramref name="indexModels"/>.</summary>
+        /// <param name="provider">The <see cref="IServiceProvider"/> instance.</param>
+        /// <param name="indexModels">The sequence of <see cref="CreateIndexModel{TDocument}"/>.</param>
+        /// <param name="name">The name of the <see cref="MongoDataOptions"/> instance.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <typeparam name="TDocument">The type of the <paramref name="indexModels" />.</typeparam>
+        /// <returns>The <paramref name="provider"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="provider"/> is <see langword="null" /> or <paramref name="indexModels"/> is <see langword="null" /> or <paramref name="name"/> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentException">No <see cref="IMongoClient"/> has been added to the <paramref name="provider"/>
+        /// -or-
+        /// collection name not found for <typeparamref name="TDocument"/>.</exception>
+        public static Task<IServiceProvider> BuildIndexesAsync<TDocument>(
             this IServiceProvider provider,
-            string collectionName,
-            IEnumerable<CreateIndexModel<T>> indexModels,
+            IEnumerable<CreateIndexModel<TDocument>> indexModels,
             string name = nameof(MongoDB),
             CancellationToken cancellationToken = default)
         {
             if (provider == default)
             {
                 throw new ArgumentNullException(nameof(provider));
-            }
-
-            if (IsNullOrWhiteSpace(collectionName))
-            {
-                throw new ArgumentNullException(nameof(collectionName));
             }
 
             if (indexModels == null)
@@ -128,8 +133,14 @@
             var client = clients[name];
             var monitor = provider.GetRequiredService<IOptionsMonitor<MongoDataOptions>>();
             var options = monitor.Get(name);
+            var type = typeof(TDocument);
+            if (!options.CollectionNames.TryGetValue(type.Name, out var collectionName))
+            {
+                throw new ArgumentException(CollectionNameNotFound(type.Name));
+            }
+
             var database = client.GetDatabase(options.DatabaseName, options.DatabaseSettings);
-            var collection = database.GetCollection<T>(collectionName, options.MongoCollectionSettings);
+            var collection = database.GetCollection<TDocument>(collectionName, options.MongoCollectionSettings);
 
             async Task<IServiceProvider> BuildIndexesAsync()
             {

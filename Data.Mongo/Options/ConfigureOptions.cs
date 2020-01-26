@@ -5,6 +5,7 @@
     using MongoDB.Driver;
     using static System.String;
     using static MongoDB.Driver.MongoClientSettings;
+    using static MongoDB.Driver.MongoCredential;
     using static MongoDB.Driver.MongoUrl;
 
     [UsedImplicitly]
@@ -22,6 +23,22 @@
                 if (IsNullOrWhiteSpace(options.MongoClientSettings.ApplicationName))
                 {
                     options.MongoClientSettings.ApplicationName = name;
+                }
+
+                if (options.MongoClientSettings.Credential == default &&
+                    !IsNullOrWhiteSpace(options.Username) &&
+                    !IsNullOrWhiteSpace(options.Password) &&
+                    !IsNullOrWhiteSpace(options.AuthDatabaseName))
+                {
+                    var credential = CreateCredential(options.AuthDatabaseName, options.Username, options.Password);
+                    options.MongoClientSettings.Credential = credential;
+                }
+
+                if (!IsNullOrWhiteSpace(options.Host))
+                {
+                    options.MongoClientSettings.Server = options.Port.HasValue
+                        ? new MongoServerAddress(options.Host, options.Port.Value)
+                        : new MongoServerAddress(options.Host);
                 }
 
                 if (options.MongoUrl == default)
@@ -47,9 +64,7 @@
                         MaxConnectionLifeTime = options.MongoClientSettings.MaxConnectionLifeTime,
                         MaxConnectionPoolSize = options.MongoClientSettings.MaxConnectionPoolSize,
                         MinConnectionPoolSize = options.MongoClientSettings.MinConnectionPoolSize,
-#pragma warning disable CS0618 // Type or member is obsolete
-                        Password = options.MongoClientSettings.Credential?.Password,
-#pragma warning restore CS0618 // Type or member is obsolete
+                        Password = options.Password,
                         ReadConcernLevel = options.MongoClientSettings.ReadConcern?.Level,
                         ReadPreference = options.MongoClientSettings.ReadPreference,
                         ReplicaSetName = options.MongoClientSettings.ReplicaSetName,
@@ -60,7 +75,7 @@
                         Server = options.MongoClientSettings.Server,
                         ServerSelectionTimeout = options.MongoClientSettings.ServerSelectionTimeout,
                         SocketTimeout = options.MongoClientSettings.SocketTimeout,
-                        Username = options.MongoClientSettings.Credential?.Username,
+                        Username = options.Username,
                         UseTls = options.MongoClientSettings.UseTls,
                         W = options.MongoClientSettings.WriteConcern?.W,
                         WTimeout = options.MongoClientSettings.WriteConcern?.WTimeout,

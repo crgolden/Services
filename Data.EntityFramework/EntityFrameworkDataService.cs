@@ -424,14 +424,9 @@
         }
 
         /// <inheritdoc />
-        public ValueTask<T> GetAsync<T>(IQueryable<T> source, object[] keyValues, CancellationToken cancellationToken = default)
+        public ValueTask<T> GetAsync<T>(object[] keyValues, CancellationToken cancellationToken = default)
             where T : class
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-
             if (keyValues == default)
             {
                 throw new ArgumentNullException(nameof(keyValues));

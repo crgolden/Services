@@ -2,7 +2,6 @@
 {
     using System;
     using Microsoft.Extensions.Configuration;
-    using Services;
 
     /// <summary>A class with methods that extend <see cref="IConfiguration"/>.</summary>
     public static class ConfigurationExtensions

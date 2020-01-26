@@ -15,9 +15,29 @@
         /// <value>The connection string.</value>
         public string ConnectionString { get; set; }
 
+        /// <summary>Gets or sets the host of the <see cref="MongoServerAddress"/> used by the <see cref="MongoDataService"/>.</summary>
+        /// <value>The host.</value>
+        public string Host { get; set; }
+
+        /// <summary>Gets or sets the port of the <see cref="MongoServerAddress"/> used by the <see cref="MongoDataService"/>.</summary>
+        /// <value>The port.</value>
+        public int? Port { get; set; }
+
         /// <summary>Gets or sets the name of the <see cref="IMongoDatabase"/> accessed by the <see cref="MongoDataService"/>.</summary>
         /// <value>The database name.</value>
         public string DatabaseName { get; set; }
+
+        /// <summary>Gets or sets the username of the <see cref="MongoCredential"/> used to access the <see cref="IMongoDatabase"/>.</summary>
+        /// <value>The username.</value>
+        public string Username { get; set; }
+
+        /// <summary>Gets or sets the password of the <see cref="MongoCredential"/> used to access the <see cref="IMongoDatabase"/>.</summary>
+        /// <value>The password.</value>
+        public string Password { get; set; }
+
+        /// <summary>Gets or sets the name of the auth database used to authenticate the user.</summary>
+        /// <value>The auth database name.</value>
+        public string AuthDatabaseName { get; set; }
 
         /// <summary>Gets or sets a value indicating whether the <see cref="MongoDataService"/> should use an <see cref="IClientSessionHandle"/>.</summary>
         /// <value>The client session flag.</value>

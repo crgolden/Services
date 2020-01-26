@@ -10,10 +10,9 @@
     using Microsoft.Extensions.Options;
     using MongoDB.Driver;
     using Options;
-    using Services;
     using static System.String;
-    using static Microsoft.Extensions.DependencyInjection.ServiceDescriptor;
     using static Constants.ExceptionMessages;
+    using static Microsoft.Extensions.DependencyInjection.ServiceDescriptor;
 
     /// <summary>A class with methods that extend <see cref="IServiceCollection"/>.</summary>
     [PublicAPI]
