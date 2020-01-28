@@ -29,7 +29,7 @@
         /// <exception cref="ArgumentException">No <see cref="IMongoClient"/> has been added to the <paramref name="provider"/>.</exception>
         public static Task<IServiceProvider> InitializeCollectionsAsync(
             this IServiceProvider provider,
-            IEnumerable<KeyValuePair<string, BsonClassMap>> keyValuePairs,
+            IDictionary<string, BsonClassMap> keyValuePairs,
             string name = nameof(MongoDB),
             CancellationToken cancellationToken = default)
         {

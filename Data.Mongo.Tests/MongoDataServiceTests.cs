@@ -11,7 +11,6 @@
     using Moq;
     using Xunit;
     using static System.Threading.Tasks.Task;
-    using static Common.DataServiceType;
     using static Common.EventId;
     using static Microsoft.Extensions.Logging.LogLevel;
     using static Moq.Mock;
@@ -20,13 +19,26 @@
     public class MongoDataServiceTests
     {
         [Fact]
+        public void ThrowsForNullName()
+        {
+            // Arrange
+            var client = Of<IMongoClient>();
+            var options = new MongoDataOptions();
+            object TestCode() => new MongoDataService(client, options, default);
+
+            // Act / Assert
+            var exception = Assert.Throws<ArgumentNullException>(TestCode);
+            Assert.Equal("name", exception.ParamName);
+        }
+
+        [Fact]
         public void ThrowsForNullMongoDatabase()
         {
             // Arrange
-            var logger = Of<ILogger<MongoDataCommandService>>();
-            var options = new Mock<IOptions<MongoDataOptions>>();
+            var logger = Of<ILogger<MongoDataService>>();
+            var options = new MongoDataOptions();
             options.Setup(x => x.Value).Returns(new MongoDataOptions());
-            object TestCode() => new MongoDataCommandService(default, logger, options.Object);
+            object TestCode() => new MongoDataService(default, logger, options.Object);
 
             // Act / Assert
             var exception = Assert.Throws<ArgumentNullException>(TestCode);
@@ -38,9 +50,9 @@
         {
             // Arrange
             var database = Of<IMongoDatabase>();
-            var options = new Mock<IOptions<MongoDataOptions>>();
+            var options = new MongoDataOptions();
             options.Setup(x => x.Value).Returns(new MongoDataOptions());
-            object TestCode() => new MongoDataCommandService(database, default, options.Object);
+            object TestCode() => new MongoDataService(database, default, options.Object);
 
             // Act / Assert
             var exception = Assert.Throws<ArgumentNullException>(TestCode);
@@ -52,8 +64,8 @@
         {
             // Arrange
             var database = Of<IMongoDatabase>();
-            var logger = Of<ILogger<MongoDataCommandService>>();
-            object TestCode() => new MongoDataCommandService(database, logger, default);
+            var logger = Of<ILogger<MongoDataService>>();
+            object TestCode() => new MongoDataService(database, logger, default);
 
             // Act / Assert
             var exception = Assert.Throws<ArgumentNullException>(TestCode);
@@ -65,10 +77,10 @@
         {
             // Arrange
             var database = Of<IMongoDatabase>();
-            var logger = Of<ILogger<MongoDataCommandService>>();
-            var options = new Mock<IOptions<MongoDataOptions>>();
+            var logger = Of<ILogger<MongoDataService>>();
+            var options = new MongoDataOptions();
             options.Setup(x => x.Value).Returns(new MongoDataOptions());
-            var service = new MongoDataCommandService(database, logger, options.Object);
+            var service = new MongoDataService(database, logger, options.Object);
 
             // Assert
             Assert.Equal(Mongo, service.Type);
@@ -80,10 +92,10 @@
             // Arrange
             const string name = "TestName";
             var database = Of<IMongoDatabase>();
-            var logger = Of<ILogger<MongoDataCommandService>>();
-            var options = new Mock<IOptions<MongoDataOptions>>();
+            var logger = Of<ILogger<MongoDataService>>();
+            var options = new MongoDataOptions();
             options.Setup(x => x.Value).Returns(new MongoDataOptions());
-            var service = new MongoDataCommandService(database, logger, options.Object)
+            var service = new MongoDataService(database, logger, options.Object)
             {
                 Name = name
             };
@@ -97,10 +109,10 @@
         {
             // Arrange
             var database = Of<IMongoDatabase>();
-            var logger = Of<ILogger<MongoDataCommandService>>();
-            var options = new Mock<IOptions<MongoDataOptions>>();
+            var logger = Of<ILogger<MongoDataService>>();
+            var options = new MongoDataOptions();
             options.Setup(x => x.Value).Returns(new MongoDataOptions());
-            var service = new MongoDataCommandService(database, logger, options.Object);
+            var service = new MongoDataService(database, logger, options.Object);
             Task TestCode() => service.CreateAsync<object>(default);
 
             // Act / Assert
@@ -113,8 +125,8 @@
         {
             // Arrange
             var database = Of<IMongoDatabase>();
-            var logger = Of<ILogger<MongoDataCommandService>>();
-            var options = new Mock<IOptions<MongoDataOptions>>();
+            var logger = Of<ILogger<MongoDataService>>();
+            var options = new MongoDataOptions();
             options.Setup(x => x.Value).Returns(new MongoDataOptions
             {
                 CollectionNames = new Dictionary<string, string>
@@ -122,7 +134,7 @@
                     { typeof(object).Name, "Objects" }
                 }
             });
-            var service = new MongoDataCommandService(database, logger, options.Object);
+            var service = new MongoDataService(database, logger, options.Object);
             Task TestCode() => service.CreateAsync<object>(default);
 
             // Act / Assert
@@ -137,8 +149,8 @@
             var collection = new Mock<IMongoCollection<object>>();
             var database = new Mock<IMongoDatabase>();
             database.Setup(x => x.GetCollection<object>("Objects", It.IsAny<MongoCollectionSettings>())).Returns(collection.Object);
-            var logger = new Mock<ILogger<MongoDataCommandService>>();
-            var options = new Mock<IOptions<MongoDataOptions>>();
+            var logger = new Mock<ILogger<MongoDataService>>();
+            var options = new MongoDataOptions();
             options.Setup(x => x.Value).Returns(new MongoDataOptions
             {
                 CollectionNames = new Dictionary<string, string>
@@ -146,7 +158,7 @@
                     { typeof(object).Name, "Objects" }
                 }
             });
-            var service = new MongoDataCommandService(database.Object, logger.Object, options.Object);
+            var service = new MongoDataService(database.Object, logger.Object, options.Object);
 
             // Act
             var response = await service.CreateAsync(new object()).ConfigureAwait(false);
@@ -164,8 +176,8 @@
             var exception = new Exception("TestException");
             var database = new Mock<IMongoDatabase>();
             database.Setup(x => x.GetCollection<object>("Objects", It.IsAny<MongoCollectionSettings>())).Throws(exception);
-            var logger = new Mock<ILogger<MongoDataCommandService>>();
-            var options = new Mock<IOptions<MongoDataOptions>>();
+            var logger = new Mock<ILogger<MongoDataService>>();
+            var options = new MongoDataOptions();
             options.Setup(x => x.Value).Returns(new MongoDataOptions
             {
                 CollectionNames = new Dictionary<string, string>
@@ -173,7 +185,7 @@
                     { typeof(object).Name, "Objects" }
                 }
             });
-            var service = new MongoDataCommandService(database.Object, logger.Object, options.Object);
+            var service = new MongoDataService(database.Object, logger.Object, options.Object);
             Task TestCode() => service.CreateAsync(new object());
 
             // Act
@@ -190,8 +202,8 @@
         {
             // Arrange
             var database = Of<IMongoDatabase>();
-            var logger = Of<ILogger<MongoDataCommandService>>();
-            var options = new Mock<IOptions<MongoDataOptions>>();
+            var logger = Of<ILogger<MongoDataService>>();
+            var options = new MongoDataOptions();
             options.Setup(x => x.Value).Returns(new MongoDataOptions
             {
                 CollectionNames = new Dictionary<string, string>
@@ -199,7 +211,7 @@
                     { typeof(object).Name, "Objects" }
                 }
             });
-            var service = new MongoDataCommandService(database, logger, options.Object);
+            var service = new MongoDataService(database, logger, options.Object);
             Task TestCode() => service.ReadAsync<object>(default);
 
             // Act / Assert
@@ -218,8 +230,8 @@
             collection.Setup(x => x.FindAsync(It.IsAny<FilterDefinition<object>>(), It.IsAny<FindOptions<object, object>>(), It.IsAny<CancellationToken>())).ReturnsAsync(cursor.Object);
             var database = new Mock<IMongoDatabase>();
             database.Setup(x => x.GetCollection<object>("Objects", It.IsAny<MongoCollectionSettings>())).Returns(collection.Object);
-            var logger = new Mock<ILogger<MongoDataCommandService>>();
-            var options = new Mock<IOptions<MongoDataOptions>>();
+            var logger = new Mock<ILogger<MongoDataService>>();
+            var options = new MongoDataOptions();
             options.Setup(x => x.Value).Returns(new MongoDataOptions
             {
                 CollectionNames = new Dictionary<string, string>
@@ -227,7 +239,7 @@
                     { typeof(object).Name, "Objects" }
                 }
             });
-            var service = new MongoDataCommandService(database.Object, logger.Object, options.Object);
+            var service = new MongoDataService(database.Object, logger.Object, options.Object);
 
             // Act
             var response = await service.ReadAsync<object>(x => true).ConfigureAwait(false);
@@ -245,8 +257,8 @@
             var exception = new Exception("TestException");
             var database = new Mock<IMongoDatabase>();
             database.Setup(x => x.GetCollection<object>("Objects", It.IsAny<MongoCollectionSettings>())).Throws(exception);
-            var logger = new Mock<ILogger<MongoDataCommandService>>();
-            var options = new Mock<IOptions<MongoDataOptions>>();
+            var logger = new Mock<ILogger<MongoDataService>>();
+            var options = new MongoDataOptions();
             options.Setup(x => x.Value).Returns(new MongoDataOptions
             {
                 CollectionNames = new Dictionary<string, string>
@@ -254,7 +266,7 @@
                     { typeof(object).Name, "Objects" }
                 }
             });
-            var service = new MongoDataCommandService(database.Object, logger.Object, options.Object);
+            var service = new MongoDataService(database.Object, logger.Object, options.Object);
             Task TestCode() => service.ReadAsync<object>(x => true);
 
             // Act
@@ -271,8 +283,8 @@
         {
             // Arrange
             var database = Of<IMongoDatabase>();
-            var logger = Of<ILogger<MongoDataCommandService>>();
-            var options = new Mock<IOptions<MongoDataOptions>>();
+            var logger = Of<ILogger<MongoDataService>>();
+            var options = new MongoDataOptions();
             options.Setup(x => x.Value).Returns(new MongoDataOptions
             {
                 CollectionNames = new Dictionary<string, string>
@@ -280,7 +292,7 @@
                     { typeof(object).Name, "Objects" }
                 }
             });
-            var service = new MongoDataCommandService(database, logger, options.Object);
+            var service = new MongoDataService(database, logger, options.Object);
             Task TestCode() => service.UpdateAsync(default, new object());
 
             // Act / Assert
@@ -293,8 +305,8 @@
         {
             // Arrange
             var database = Of<IMongoDatabase>();
-            var logger = Of<ILogger<MongoDataCommandService>>();
-            var options = new Mock<IOptions<MongoDataOptions>>();
+            var logger = Of<ILogger<MongoDataService>>();
+            var options = new MongoDataOptions();
             options.Setup(x => x.Value).Returns(new MongoDataOptions
             {
                 CollectionNames = new Dictionary<string, string>
@@ -302,7 +314,7 @@
                     { typeof(object).Name, "Objects" }
                 }
             });
-            var service = new MongoDataCommandService(database, logger, options.Object);
+            var service = new MongoDataService(database, logger, options.Object);
             Task TestCode() => service.UpdateAsync<object>(x => true, default);
 
             // Act / Assert
@@ -317,8 +329,8 @@
             var collection = new Mock<IMongoCollection<object>>();
             var database = new Mock<IMongoDatabase>();
             database.Setup(x => x.GetCollection<object>("Objects", It.IsAny<MongoCollectionSettings>())).Returns(collection.Object);
-            var logger = new Mock<ILogger<MongoDataCommandService>>();
-            var options = new Mock<IOptions<MongoDataOptions>>();
+            var logger = new Mock<ILogger<MongoDataService>>();
+            var options = new MongoDataOptions();
             options.Setup(x => x.Value).Returns(new MongoDataOptions
             {
                 CollectionNames = new Dictionary<string, string>
@@ -326,7 +338,7 @@
                     { typeof(object).Name, "Objects" }
                 }
             });
-            var service = new MongoDataCommandService(database.Object, logger.Object, options.Object);
+            var service = new MongoDataService(database.Object, logger.Object, options.Object);
 
             // Act
             await service.UpdateAsync(x => true, new object()).ConfigureAwait(false);
@@ -344,8 +356,8 @@
             var exception = new Exception("TestException");
             var database = new Mock<IMongoDatabase>();
             database.Setup(x => x.GetCollection<object>("Objects", It.IsAny<MongoCollectionSettings>())).Throws(exception);
-            var logger = new Mock<ILogger<MongoDataCommandService>>();
-            var options = new Mock<IOptions<MongoDataOptions>>();
+            var logger = new Mock<ILogger<MongoDataService>>();
+            var options = new MongoDataOptions();
             options.Setup(x => x.Value).Returns(new MongoDataOptions
             {
                 CollectionNames = new Dictionary<string, string>
@@ -353,7 +365,7 @@
                     { typeof(object).Name, "Objects" }
                 }
             });
-            var service = new MongoDataCommandService(database.Object, logger.Object, options.Object);
+            var service = new MongoDataService(database.Object, logger.Object, options.Object);
             Task TestCode() => service.UpdateAsync(x => true, new object());
 
             // Act
@@ -370,8 +382,8 @@
         {
             // Arrange
             var database = Of<IMongoDatabase>();
-            var logger = Of<ILogger<MongoDataCommandService>>();
-            var options = new Mock<IOptions<MongoDataOptions>>();
+            var logger = Of<ILogger<MongoDataService>>();
+            var options = new MongoDataOptions();
             options.Setup(x => x.Value).Returns(new MongoDataOptions
             {
                 CollectionNames = new Dictionary<string, string>
@@ -379,7 +391,7 @@
                     { typeof(object).Name, "Objects" }
                 }
             });
-            var service = new MongoDataCommandService(database, logger, options.Object);
+            var service = new MongoDataService(database, logger, options.Object);
             Task TestCode() => service.DeleteAsync<object>(default);
 
             // Act / Assert
@@ -394,8 +406,8 @@
             var collection = new Mock<IMongoCollection<object>>();
             var database = new Mock<IMongoDatabase>();
             database.Setup(x => x.GetCollection<object>("Objects", It.IsAny<MongoCollectionSettings>())).Returns(collection.Object);
-            var logger = new Mock<ILogger<MongoDataCommandService>>();
-            var options = new Mock<IOptions<MongoDataOptions>>();
+            var logger = new Mock<ILogger<MongoDataService>>();
+            var options = new MongoDataOptions();
             options.Setup(x => x.Value).Returns(new MongoDataOptions
             {
                 CollectionNames = new Dictionary<string, string>
@@ -403,7 +415,7 @@
                     { typeof(object).Name, "Objects" }
                 }
             });
-            var service = new MongoDataCommandService(database.Object, logger.Object, options.Object);
+            var service = new MongoDataService(database.Object, logger.Object, options.Object);
 
             // Act
             await service.DeleteAsync<object>(x => true).ConfigureAwait(false);
@@ -421,8 +433,8 @@
             var exception = new Exception("TestException");
             var database = new Mock<IMongoDatabase>();
             database.Setup(x => x.GetCollection<object>("Objects", It.IsAny<MongoCollectionSettings>())).Throws(exception);
-            var logger = new Mock<ILogger<MongoDataCommandService>>();
-            var options = new Mock<IOptions<MongoDataOptions>>();
+            var logger = new Mock<ILogger<MongoDataService>>();
+            var options = new MongoDataOptions();
             options.Setup(x => x.Value).Returns(new MongoDataOptions
             {
                 CollectionNames = new Dictionary<string, string>
@@ -430,7 +442,7 @@
                     { typeof(object).Name, "Objects" }
                 }
             });
-            var service = new MongoDataCommandService(database.Object, logger.Object, options.Object);
+            var service = new MongoDataService(database.Object, logger.Object, options.Object);
             Task TestCode() => service.DeleteAsync<object>(x => true);
 
             // Act
@@ -449,8 +461,8 @@
             var collection = new Mock<IMongoCollection<object>>();
             var database = new Mock<IMongoDatabase>();
             database.Setup(x => x.GetCollection<object>("Objects", It.IsAny<MongoCollectionSettings>())).Returns(collection.Object);
-            var logger = new Mock<ILogger<MongoDataCommandService>>();
-            var options = new Mock<IOptions<MongoDataOptions>>();
+            var logger = new Mock<ILogger<MongoDataService>>();
+            var options = new MongoDataOptions();
             options.Setup(x => x.Value).Returns(new MongoDataOptions
             {
                 CollectionNames = new Dictionary<string, string>
@@ -458,7 +470,7 @@
                     { typeof(object).Name, "Objects" }
                 }
             });
-            var service = new MongoDataCommandService(database.Object, logger.Object, options.Object);
+            var service = new MongoDataService(database.Object, logger.Object, options.Object);
 
             // Act
             service.Query<object>();
@@ -475,8 +487,8 @@
             var exception = new Exception("TestException");
             var database = new Mock<IMongoDatabase>();
             database.Setup(x => x.GetCollection<object>("Objects", It.IsAny<MongoCollectionSettings>())).Throws(exception);
-            var logger = new Mock<ILogger<MongoDataCommandService>>();
-            var options = new Mock<IOptions<MongoDataOptions>>();
+            var logger = new Mock<ILogger<MongoDataService>>();
+            var options = new MongoDataOptions();
             options.Setup(x => x.Value).Returns(new MongoDataOptions
             {
                 CollectionNames = new Dictionary<string, string>
@@ -484,7 +496,7 @@
                     { typeof(object).Name, "Objects" }
                 }
             });
-            var service = new MongoDataCommandService(database.Object, logger.Object, options.Object);
+            var service = new MongoDataService(database.Object, logger.Object, options.Object);
             object TestCode() => service.Query<object>();
 
             // Act
