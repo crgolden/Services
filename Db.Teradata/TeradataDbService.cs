@@ -3,37 +3,31 @@
     using System;
     using System.Data.Common;
     using Common;
-    using Microsoft.Extensions.Options;
+    using JetBrains.Annotations;
     using Teradata.Client.Provider;
-    using static Common.DbServiceType;
 
     /// <inheritdoc cref="IDbService" />
+    [PublicAPI]
     public class TeradataDbService : DbProviderFactory, IDbService
     {
         private readonly TdConnectionStringBuilder _connectionStringBuilder;
 
-        public TeradataDbService(IOptions<TeradataDbOptions>? teradataDbOptions)
+        /// <summary>Initializes a new instance of the <see cref="TeradataDbService"/> class.</summary>
+        /// <param name="connectionStringBuilder">The connection string builder.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="connectionStringBuilder"/> is <see langword="null"/>.</exception>
+        public TeradataDbService(TdConnectionStringBuilder connectionStringBuilder)
         {
-            if (teradataDbOptions?.Value == default)
-            {
-                throw new ArgumentNullException(nameof(teradataDbOptions));
-            }
-
-            _connectionStringBuilder = new TdConnectionStringBuilder
-            {
-                DataSource = teradataDbOptions.Value.DataSource,
-                Database = teradataDbOptions.Value.Database,
-                UserId = teradataDbOptions.Value.UserId,
-                Password = teradataDbOptions.Value.Password,
-                AuthenticationMechanism = teradataDbOptions.Value.AuthenticationMechanism
-            };
+            _connectionStringBuilder = connectionStringBuilder ?? throw new ArgumentNullException(nameof(connectionStringBuilder));
         }
 
         /// <inheritdoc />
-        public string? Name { get; set; }
+        public string Name { get; set; }
 
         /// <inheritdoc />
-        public DbServiceType Type => Teradata;
+        public bool CanCreateDataAdapter => true;
+
+        /// <inheritdoc />
+        public bool CanCreateCommandBuilder => true;
 
         /// <inheritdoc cref="IDbService" />
         public override DbCommand CreateCommand() => new TdCommand();

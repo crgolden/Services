@@ -1,5 +1,6 @@
 ﻿namespace Services.Options
 {
+    using System.Diagnostics.CodeAnalysis;
     using JetBrains.Annotations;
     using Microsoft.Extensions.Options;
     using MongoDB.Driver;
@@ -9,6 +10,7 @@
     using static MongoDB.Driver.MongoUrl;
 
     [UsedImplicitly]
+    [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Used implicitly")]
     internal class ConfigureOptions : IConfigureNamedOptions<MongoDataOptions>
     {
         public void Configure(MongoDataOptions options)

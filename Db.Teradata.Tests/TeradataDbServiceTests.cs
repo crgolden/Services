@@ -2,46 +2,25 @@
 {
     using System;
     using global::Teradata.Client.Provider;
-    using Microsoft.Extensions.Options;
-    using Moq;
     using Xunit;
-    using static Common.DbServiceType;
 
     public class TeradataDbServiceTests
     {
-        private readonly Mock<IOptions<TeradataDbOptions>> _teradataDbOptions;
+        private readonly TdConnectionStringBuilder _tdConnectionStringBuilder;
 
         public TeradataDbServiceTests()
         {
-            _teradataDbOptions = new Mock<IOptions<TeradataDbOptions>>();
-            _teradataDbOptions.Setup(x => x.Value).Returns(new TeradataDbOptions
-            {
-                Database = nameof(TeradataDbOptions.Database),
-                DataSource = nameof(TeradataDbOptions.DataSource),
-                UserId = nameof(TeradataDbOptions.UserId),
-                Password = nameof(TeradataDbOptions.Password),
-                AuthenticationMechanism = nameof(TeradataDbOptions.AuthenticationMechanism)
-            });
+            _tdConnectionStringBuilder = new TdConnectionStringBuilder();
         }
 
         [Fact]
         public void ThrowsForInvalidOptions()
         {
             // Arrange
-            static object TestCode() => new TeradataDbService(default);
+            TeradataDbService TestCode() => new TeradataDbService(default);
 
             // Assert
             Assert.Throws<ArgumentNullException>(TestCode);
-        }
-
-        [Fact]
-        public void Provider()
-        {
-            // Arrange
-            var teradataDbService = new TeradataDbService(_teradataDbOptions.Object);
-
-            // Assert
-            Assert.Equal(Teradata, teradataDbService.Type);
         }
 
         [Fact]
@@ -49,7 +28,7 @@
         {
             // Arrange
             const string name = "TestName";
-            var teradataDbService = new TeradataDbService(_teradataDbOptions.Object)
+            var teradataDbService = new TeradataDbService(_tdConnectionStringBuilder)
             {
                 Name = name
             };
@@ -62,7 +41,7 @@
         public void CreateCommand()
         {
             // Arrange
-            var teradataDbService = new TeradataDbService(_teradataDbOptions.Object);
+            var teradataDbService = new TeradataDbService(_tdConnectionStringBuilder);
 
             // Act
             var command = teradataDbService.CreateCommand();
@@ -75,7 +54,7 @@
         public void CreateCommandBuilder()
         {
             // Arrange
-            var teradataDbService = new TeradataDbService(_teradataDbOptions.Object);
+            var teradataDbService = new TeradataDbService(_tdConnectionStringBuilder);
 
             // Act
             var commandBuilder = teradataDbService.CreateCommandBuilder();
@@ -88,7 +67,7 @@
         public void CreateConnection()
         {
             // Arrange
-            var teradataDbService = new TeradataDbService(_teradataDbOptions.Object);
+            var teradataDbService = new TeradataDbService(_tdConnectionStringBuilder);
 
             // Act
             var connection = teradataDbService.CreateConnection();
@@ -101,25 +80,20 @@
         public void CreateConnectionStringBuilder()
         {
             // Arrange
-            var teradataDbService = new TeradataDbService(_teradataDbOptions.Object);
+            var teradataDbService = new TeradataDbService(_tdConnectionStringBuilder);
 
             // Act
             var connectionStringBuilder = teradataDbService.CreateConnectionStringBuilder();
 
             // Assert
-            var teradataConnectionStringBuilder = Assert.IsType<TdConnectionStringBuilder>(connectionStringBuilder);
-            Assert.Equal(_teradataDbOptions.Object.Value.Database, teradataConnectionStringBuilder.Database);
-            Assert.Equal(_teradataDbOptions.Object.Value.DataSource, teradataConnectionStringBuilder.DataSource);
-            Assert.Equal(_teradataDbOptions.Object.Value.UserId, teradataConnectionStringBuilder.UserId);
-            Assert.Equal(_teradataDbOptions.Object.Value.Password, teradataConnectionStringBuilder.Password);
-            Assert.Equal(_teradataDbOptions.Object.Value.AuthenticationMechanism, teradataConnectionStringBuilder.AuthenticationMechanism);
+            Assert.IsType<TdConnectionStringBuilder>(connectionStringBuilder);
         }
 
         [Fact]
         public void CreateDataAdapter()
         {
             // Arrange
-            var teradataDbService = new TeradataDbService(_teradataDbOptions.Object);
+            var teradataDbService = new TeradataDbService(_tdConnectionStringBuilder);
 
             // Act
             var dataAdapter = teradataDbService.CreateDataAdapter();
@@ -132,7 +106,7 @@
         public void CreateParameter()
         {
             // Arrange
-            var teradataDbService = new TeradataDbService(_teradataDbOptions.Object);
+            var teradataDbService = new TeradataDbService(_tdConnectionStringBuilder);
 
             // Act
             var parameter = teradataDbService.CreateParameter();

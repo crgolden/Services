@@ -3,38 +3,34 @@
     using System;
     using System.Data.Common;
     using Common;
-    using Microsoft.Extensions.Options;
+    using JetBrains.Annotations;
     using Oracle.ManagedDataAccess.Client;
-    using static Common.DbServiceType;
 
     /// <inheritdoc cref="IDbService" />
+    [PublicAPI]
     public class OracleDbService : DbProviderFactory, IDbService
     {
         private readonly OracleConnectionStringBuilder _connectionStringBuilder;
 
-        public OracleDbService(IOptions<OracleDbOptions>? oracleDbOptions)
+        /// <summary>Initializes a new instance of the <see cref="OracleDbService"/> class.</summary>
+        /// <param name="oracleConnectionStringBuilder">The oracle connection string builder.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="oracleConnectionStringBuilder"/> is <see langword="null"/>.</exception>
+        public OracleDbService(OracleConnectionStringBuilder oracleConnectionStringBuilder)
         {
-            if (oracleDbOptions?.Value == default)
-            {
-                throw new ArgumentNullException(nameof(oracleDbOptions));
-            }
-
-            _connectionStringBuilder = new OracleConnectionStringBuilder
-            {
-                DataSource = oracleDbOptions.Value.DataSource,
-                UserID = oracleDbOptions.Value.UserId,
-                Password = oracleDbOptions.Value.Password
-            };
+            _connectionStringBuilder = oracleConnectionStringBuilder ?? throw new ArgumentNullException(nameof(oracleConnectionStringBuilder));
         }
 
         /// <inheritdoc />
-        public string? Name { get; set; }
-
-        /// <inheritdoc />
-        public DbServiceType Type => Oracle;
+        public string Name { get; set; }
 
         /// <inheritdoc cref="IDbService" />
         public override bool CanCreateDataSourceEnumerator => true;
+
+        /// <inheritdoc />
+        public bool CanCreateDataAdapter => true;
+
+        /// <inheritdoc />
+        public bool CanCreateCommandBuilder => true;
 
         /// <inheritdoc cref="IDbService" />
         public override DbCommand CreateCommand() => new OracleCommand();

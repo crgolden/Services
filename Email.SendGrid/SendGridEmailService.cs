@@ -6,37 +6,32 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Common;
-    using Microsoft.Extensions.Logging;
+    using JetBrains.Annotations;
     using SendGrid;
     using SendGrid.Helpers.Mail;
-    using static System.DateTime;
     using static System.String;
-    using static Common.EventId;
-    using static Microsoft.Extensions.Logging.LogLevel;
-    using EventId = Microsoft.Extensions.Logging.EventId;
 
     /// <inheritdoc />
+    [PublicAPI]
     public class SendGridEmailService : IEmailService
     {
         private readonly ISendGridClient _sendGridClient;
-        private readonly ILogger<SendGridEmailService> _logger;
 
-        public SendGridEmailService(
-            ISendGridClient? sendGridClient,
-            ILogger<SendGridEmailService>? logger)
+        /// <summary>Initializes a new instance of the <see cref="SendGridEmailService"/> class.</summary>
+        /// <param name="sendGridClient">The send grid client.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="sendGridClient"/> is <see langword="null"/>.</exception>
+        public SendGridEmailService(ISendGridClient sendGridClient)
         {
             _sendGridClient = sendGridClient ?? throw new ArgumentNullException(nameof(sendGridClient));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         /// <inheritdoc />
         public Task SendEmailAsync(
-            string? source,
-            IEnumerable<string>? destinations,
-            string? subject,
-            string? htmlBody,
-            string? textBody = default,
-            LogLevel logLevel = Information,
+            string source,
+            IEnumerable<string> destinations,
+            string subject,
+            string htmlBody,
+            string textBody = default,
             CancellationToken cancellationToken = default)
         {
             if (IsNullOrEmpty(source))
@@ -65,41 +60,29 @@
                 throw new ArgumentNullException(nameof(htmlBody));
             }
 
-            return SendEmail(source, recipients, subject, htmlBody, textBody, logLevel, cancellationToken);
-        }
+            async Task SendEmailAsync()
+            {
+                var message = new SendGridMessage
+                {
+                    From = new EmailAddress(source),
+                    Subject = subject,
+                    PlainTextContent = textBody,
+                    HtmlContent = htmlBody
+                };
+                foreach (var recipient in recipients)
+                {
+                    message.AddTo(new EmailAddress(recipient));
+                }
 
-        private async Task SendEmail(
-            string source,
-            IEnumerable<string> recipients,
-            string? subject,
-            string? htmlBody,
-            string? textBody,
-            LogLevel logLevel,
-            CancellationToken cancellationToken)
-        {
-            var message = new SendGridMessage
-            {
-                From = new EmailAddress(source),
-                Subject = subject,
-                PlainTextContent = textBody,
-                HtmlContent = htmlBody
-            };
-            foreach (var recipient in recipients)
-            {
-                message.AddTo(new EmailAddress(recipient));
+                // Disable click tracking.
+                // See https://sendgrid.com/docs/User_Guide/Settings/tracking.html
+                message.SetClickTracking(false, false);
+                await _sendGridClient
+                    .SendEmailAsync(message, cancellationToken)
+                    .ConfigureAwait(false);
             }
 
-            // Disable click tracking.
-            // See https://sendgrid.com/docs/User_Guide/Settings/tracking.html
-            message.SetClickTracking(false, false);
-            var response = await _sendGridClient
-                .SendEmailAsync(message, cancellationToken)
-                .ConfigureAwait(false);
-            _logger.Log(
-                logLevel: logLevel,
-                eventId: new EventId((int)EmailSent, $"{EmailSent}"),
-                message: "Email message {@Message} sent with response {@Response} at {@Time}",
-                args: new object[] { message, response, UtcNow });
+            return SendEmailAsync();
         }
     }
 }

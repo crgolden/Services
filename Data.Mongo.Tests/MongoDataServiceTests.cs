@@ -1,71 +1,56 @@
 ﻿namespace Services.Data.Mongo.Tests
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
     using Common;
-    using Microsoft.Extensions.Logging;
-    using Microsoft.Extensions.Options;
     using MongoDB.Driver;
     using Moq;
     using Xunit;
+    using static System.Guid;
     using static System.Threading.Tasks.Task;
-    using static Common.EventId;
-    using static Microsoft.Extensions.Logging.LogLevel;
+    using static Constants.ExceptionMessages;
     using static Moq.Mock;
     using static Moq.Times;
 
     public class MongoDataServiceTests
     {
-        [Fact]
-        public void ThrowsForNullName()
-        {
-            // Arrange
-            var client = Of<IMongoClient>();
-            var options = new MongoDataOptions();
-            object TestCode() => new MongoDataService(client, options, default);
+        private readonly Mock<IMongoClient> _mongoClient;
+        private readonly Mock<IMongoDatabase> _mongoDatabase;
+        private readonly Mock<IMongoCollection<object>> _mongoCollection;
+        private readonly MongoDataOptions _options;
+        private readonly string _name;
 
-            // Act / Assert
-            var exception = Assert.Throws<ArgumentNullException>(TestCode);
-            Assert.Equal("name", exception.ParamName);
+        public MongoDataServiceTests()
+        {
+            _mongoClient = new Mock<IMongoClient>();
+            _mongoDatabase = new Mock<IMongoDatabase>();
+            _mongoCollection = new Mock<IMongoCollection<object>>();
+            _mongoDatabase.Setup(x => x.GetCollection<object>(It.IsAny<string>(), It.IsAny<MongoCollectionSettings>())).Returns(_mongoCollection.Object);
+            _mongoClient.Setup(x => x.GetDatabase(It.IsAny<string>(), It.IsAny<MongoDatabaseSettings>())).Returns(_mongoDatabase.Object);
+            _options = new MongoDataOptions();
+            _options.CollectionNames.TryAdd(typeof(object).Name, "Objects");
+            _name = NewGuid().ToString();
         }
 
         [Fact]
-        public void ThrowsForNullMongoDatabase()
+        public void ThrowsForNullMongoClient()
         {
             // Arrange
-            var logger = Of<ILogger<MongoDataService>>();
-            var options = new MongoDataOptions();
-            options.Setup(x => x.Value).Returns(new MongoDataOptions());
-            object TestCode() => new MongoDataService(default, logger, options.Object);
+            MongoDataService TestCode() => new MongoDataService(default, _options, _name);
 
             // Act / Assert
             var exception = Assert.Throws<ArgumentNullException>(TestCode);
-            Assert.Equal("database", exception.ParamName);
-        }
-
-        [Fact]
-        public void ThrowsForNullLogger()
-        {
-            // Arrange
-            var database = Of<IMongoDatabase>();
-            var options = new MongoDataOptions();
-            options.Setup(x => x.Value).Returns(new MongoDataOptions());
-            object TestCode() => new MongoDataService(database, default, options.Object);
-
-            // Act / Assert
-            var exception = Assert.Throws<ArgumentNullException>(TestCode);
-            Assert.Equal("logger", exception.ParamName);
+            Assert.Equal("mongoClient", exception.ParamName);
         }
 
         [Fact]
         public void ThrowsForNullOptions()
         {
             // Arrange
-            var database = Of<IMongoDatabase>();
-            var logger = Of<ILogger<MongoDataService>>();
-            object TestCode() => new MongoDataService(database, logger, default);
+            object TestCode() => new MongoDataService(_mongoClient.Object, default, _name);
 
             // Act / Assert
             var exception = Assert.Throws<ArgumentNullException>(TestCode);
@@ -73,439 +58,387 @@
         }
 
         [Fact]
-        public void Type()
+        public void ThrowsForNullName()
         {
             // Arrange
-            var database = Of<IMongoDatabase>();
-            var logger = Of<ILogger<MongoDataService>>();
-            var options = new MongoDataOptions();
-            options.Setup(x => x.Value).Returns(new MongoDataOptions());
-            var service = new MongoDataService(database, logger, options.Object);
+            MongoDataService TestCode() => new MongoDataService(_mongoClient.Object, _options, default);
 
-            // Assert
-            Assert.Equal(Mongo, service.Type);
+            // Act / Assert
+            var exception = Assert.Throws<ArgumentNullException>(TestCode);
+            Assert.Equal("name", exception.ParamName);
         }
 
         [Fact]
         public void Name()
         {
-            // Arrange
-            const string name = "TestName";
-            var database = Of<IMongoDatabase>();
-            var logger = Of<ILogger<MongoDataService>>();
-            var options = new MongoDataOptions();
-            options.Setup(x => x.Value).Returns(new MongoDataOptions());
-            var service = new MongoDataService(database, logger, options.Object)
+            // Arrange / Act
+            using (var service = new MongoDataService(_mongoClient.Object, _options, _name))
             {
-                Name = name
-            };
-
-            // Assert
-            Assert.Equal(name, service.Name);
-        }
-
-        [Fact]
-        public async Task CreateAsyncThrowsForMissingCollectionName()
-        {
-            // Arrange
-            var database = Of<IMongoDatabase>();
-            var logger = Of<ILogger<MongoDataService>>();
-            var options = new MongoDataOptions();
-            options.Setup(x => x.Value).Returns(new MongoDataOptions());
-            var service = new MongoDataService(database, logger, options.Object);
-            Task TestCode() => service.CreateAsync<object>(default);
-
-            // Act / Assert
-            var exception = await Assert.ThrowsAsync<ArgumentException>(TestCode).ConfigureAwait(false);
-            Assert.Equal($"Collection name not found for type '{typeof(object).Name}'", exception.Message);
+                // Assert
+                Assert.Equal(_name, service.Name);
+            }
         }
 
         [Fact]
         public async Task CreateAsyncThrowsForNullRecord()
         {
             // Arrange
-            var database = Of<IMongoDatabase>();
-            var logger = Of<ILogger<MongoDataService>>();
-            var options = new MongoDataOptions();
-            options.Setup(x => x.Value).Returns(new MongoDataOptions
+            Task<object> TestCode()
             {
-                CollectionNames = new Dictionary<string, string>
+                using (var service = new MongoDataService(_mongoClient.Object, _options, _name))
                 {
-                    { typeof(object).Name, "Objects" }
+                    // Act
+                    return service.CreateAsync<object>(default);
                 }
-            });
-            var service = new MongoDataService(database, logger, options.Object);
-            Task TestCode() => service.CreateAsync<object>(default);
+            }
+
+            // Assert
+            var exception = await Assert.ThrowsAsync<ArgumentNullException>(TestCode).ConfigureAwait(true);
+            Assert.Equal("record", exception.ParamName);
+        }
+
+        [Fact]
+        public async Task CreateAsyncThrowsForMissingCollectionName()
+        {
+            // Arrange
+            Task<object> TestCode()
+            {
+                using (var service = new MongoDataService(_mongoClient.Object, new MongoDataOptions(), _name))
+                {
+                    return service.CreateAsync(new object());
+                }
+            }
 
             // Act / Assert
-            var exception = await Assert.ThrowsAsync<ArgumentNullException>(TestCode).ConfigureAwait(false);
-            Assert.Equal("record", exception.ParamName);
+            var exception = await Assert.ThrowsAsync<ArgumentException>(TestCode).ConfigureAwait(false);
+            Assert.Equal(CollectionNameNotFound(typeof(object).Name), exception.Message);
         }
 
         [Fact]
         public async Task CreateAsync()
         {
             // Arrange
-            var collection = new Mock<IMongoCollection<object>>();
-            var database = new Mock<IMongoDatabase>();
-            database.Setup(x => x.GetCollection<object>("Objects", It.IsAny<MongoCollectionSettings>())).Returns(collection.Object);
-            var logger = new Mock<ILogger<MongoDataService>>();
-            var options = new MongoDataOptions();
-            options.Setup(x => x.Value).Returns(new MongoDataOptions
-            {
-                CollectionNames = new Dictionary<string, string>
-                {
-                    { typeof(object).Name, "Objects" }
-                }
-            });
-            var service = new MongoDataService(database.Object, logger.Object, options.Object);
+            object response;
 
             // Act
-            var response = await service.CreateAsync(new object()).ConfigureAwait(false);
+            using (var service = new MongoDataService(_mongoClient.Object, _options, _name))
+            {
+                response = await service.CreateAsync(new object()).ConfigureAwait(false);
+            }
 
             // Assert
-            collection.Verify(x => x.InsertOneAsync(response, It.IsAny<InsertOneOptions>(), It.IsAny<CancellationToken>()), Once);
-            logger.As<ILogger>().Verify(DataCreateStart.IsLoggedWith(Information), Once);
-            logger.As<ILogger>().Verify(DataCreateEnd.IsLoggedWith(Information), Once);
+            _mongoCollection.Verify(x => x.InsertOneAsync(response, It.IsAny<InsertOneOptions>(), It.IsAny<CancellationToken>()), Once);
         }
 
-        [Fact]
-        public async Task CreateAsyncInvalid()
-        {
-            // Arrange
-            var exception = new Exception("TestException");
-            var database = new Mock<IMongoDatabase>();
-            database.Setup(x => x.GetCollection<object>("Objects", It.IsAny<MongoCollectionSettings>())).Throws(exception);
-            var logger = new Mock<ILogger<MongoDataService>>();
-            var options = new MongoDataOptions();
-            options.Setup(x => x.Value).Returns(new MongoDataOptions
-            {
-                CollectionNames = new Dictionary<string, string>
-                {
-                    { typeof(object).Name, "Objects" }
-                }
-            });
-            var service = new MongoDataService(database.Object, logger.Object, options.Object);
-            Task TestCode() => service.CreateAsync(new object());
+        //[Fact]
+        //public async Task ReadAsyncThrowsForNullExpression()
+        //{
+        //    // Arrange
+        //    var database = Of<IMongoDatabase>();
+        //    var logger = Of<ILogger<MongoDataService>>();
+        //    var options = new MongoDataOptions();
+        //    options.Setup(x => x.Value).Returns(new MongoDataOptions
+        //    {
+        //        CollectionNames = new Dictionary<string, string>
+        //        {
+        //            { typeof(object).Name, "Objects" }
+        //        }
+        //    });
+        //    var service = new MongoDataService(database, logger, options.Object);
+        //    Task TestCode() => service.ReadAsync<object>(default);
 
-            // Act
-            var response = await Assert.ThrowsAsync<Exception>(TestCode).ConfigureAwait(false);
+        //    // Act / Assert
+        //    var exception = await Assert.ThrowsAsync<ArgumentNullException>(TestCode).ConfigureAwait(false);
+        //    Assert.Equal("expression", exception.ParamName);
+        //}
 
-            // Assert
-            Assert.Equal(exception.Message, response.Message);
-            logger.As<ILogger>().Verify(DataCreateStart.IsLoggedWith(Information), Once);
-            logger.As<ILogger>().Verify(DataCreateError.IsLoggedWith(Error, exception), Once);
-        }
+        //[Fact]
+        //public async Task ReadAsync()
+        //{
+        //    // Arrange
+        //    var cursor = new Mock<IAsyncCursor<object>>();
+        //    cursor.Setup(x => x.Current).Returns(new[] { new object() });
+        //    cursor.SetupSequence(x => x.MoveNextAsync(It.IsAny<CancellationToken>())).Returns(FromResult(true)).Returns(FromResult(false));
+        //    var collection = new Mock<IMongoCollection<object>>();
+        //    collection.Setup(x => x.FindAsync(It.IsAny<FilterDefinition<object>>(), It.IsAny<FindOptions<object, object>>(), It.IsAny<CancellationToken>())).ReturnsAsync(cursor.Object);
+        //    var database = new Mock<IMongoDatabase>();
+        //    database.Setup(x => x.GetCollection<object>("Objects", It.IsAny<MongoCollectionSettings>())).Returns(collection.Object);
+        //    var logger = new Mock<ILogger<MongoDataService>>();
+        //    var options = new MongoDataOptions();
+        //    options.Setup(x => x.Value).Returns(new MongoDataOptions
+        //    {
+        //        CollectionNames = new Dictionary<string, string>
+        //        {
+        //            { typeof(object).Name, "Objects" }
+        //        }
+        //    });
+        //    var service = new MongoDataService(database.Object, logger.Object, options.Object);
 
-        [Fact]
-        public async Task ReadAsyncThrowsForNullExpression()
-        {
-            // Arrange
-            var database = Of<IMongoDatabase>();
-            var logger = Of<ILogger<MongoDataService>>();
-            var options = new MongoDataOptions();
-            options.Setup(x => x.Value).Returns(new MongoDataOptions
-            {
-                CollectionNames = new Dictionary<string, string>
-                {
-                    { typeof(object).Name, "Objects" }
-                }
-            });
-            var service = new MongoDataService(database, logger, options.Object);
-            Task TestCode() => service.ReadAsync<object>(default);
+        //    // Act
+        //    var response = await service.ReadAsync<object>(x => true).ConfigureAwait(false);
 
-            // Act / Assert
-            var exception = await Assert.ThrowsAsync<ArgumentNullException>(TestCode).ConfigureAwait(false);
-            Assert.Equal("expression", exception.ParamName);
-        }
+        //    // Assert
+        //    Assert.NotNull(response);
+        //    logger.As<ILogger>().Verify(DataReadStart.IsLoggedWith(Information), Once);
+        //    logger.As<ILogger>().Verify(DataReadEnd.IsLoggedWith(Information), Once);
+        //}
 
-        [Fact]
-        public async Task ReadAsync()
-        {
-            // Arrange
-            var cursor = new Mock<IAsyncCursor<object>>();
-            cursor.Setup(x => x.Current).Returns(new[] { new object() });
-            cursor.SetupSequence(x => x.MoveNextAsync(It.IsAny<CancellationToken>())).Returns(FromResult(true)).Returns(FromResult(false));
-            var collection = new Mock<IMongoCollection<object>>();
-            collection.Setup(x => x.FindAsync(It.IsAny<FilterDefinition<object>>(), It.IsAny<FindOptions<object, object>>(), It.IsAny<CancellationToken>())).ReturnsAsync(cursor.Object);
-            var database = new Mock<IMongoDatabase>();
-            database.Setup(x => x.GetCollection<object>("Objects", It.IsAny<MongoCollectionSettings>())).Returns(collection.Object);
-            var logger = new Mock<ILogger<MongoDataService>>();
-            var options = new MongoDataOptions();
-            options.Setup(x => x.Value).Returns(new MongoDataOptions
-            {
-                CollectionNames = new Dictionary<string, string>
-                {
-                    { typeof(object).Name, "Objects" }
-                }
-            });
-            var service = new MongoDataService(database.Object, logger.Object, options.Object);
+        //[Fact]
+        //public async Task ReadAsyncInvalid()
+        //{
+        //    // Arrange
+        //    var exception = new Exception("TestException");
+        //    var database = new Mock<IMongoDatabase>();
+        //    database.Setup(x => x.GetCollection<object>("Objects", It.IsAny<MongoCollectionSettings>())).Throws(exception);
+        //    var logger = new Mock<ILogger<MongoDataService>>();
+        //    var options = new MongoDataOptions();
+        //    options.Setup(x => x.Value).Returns(new MongoDataOptions
+        //    {
+        //        CollectionNames = new Dictionary<string, string>
+        //        {
+        //            { typeof(object).Name, "Objects" }
+        //        }
+        //    });
+        //    var service = new MongoDataService(database.Object, logger.Object, options.Object);
+        //    Task TestCode() => service.ReadAsync<object>(x => true);
 
-            // Act
-            var response = await service.ReadAsync<object>(x => true).ConfigureAwait(false);
+        //    // Act
+        //    var response = await Assert.ThrowsAsync<Exception>(TestCode).ConfigureAwait(false);
 
-            // Assert
-            Assert.NotNull(response);
-            logger.As<ILogger>().Verify(DataReadStart.IsLoggedWith(Information), Once);
-            logger.As<ILogger>().Verify(DataReadEnd.IsLoggedWith(Information), Once);
-        }
+        //    // Assert
+        //    Assert.Equal(exception.Message, response.Message);
+        //    logger.As<ILogger>().Verify(DataReadStart.IsLoggedWith(Information), Once);
+        //    logger.As<ILogger>().Verify(DataReadError.IsLoggedWith(Error, exception), Once);
+        //}
 
-        [Fact]
-        public async Task ReadAsyncInvalid()
-        {
-            // Arrange
-            var exception = new Exception("TestException");
-            var database = new Mock<IMongoDatabase>();
-            database.Setup(x => x.GetCollection<object>("Objects", It.IsAny<MongoCollectionSettings>())).Throws(exception);
-            var logger = new Mock<ILogger<MongoDataService>>();
-            var options = new MongoDataOptions();
-            options.Setup(x => x.Value).Returns(new MongoDataOptions
-            {
-                CollectionNames = new Dictionary<string, string>
-                {
-                    { typeof(object).Name, "Objects" }
-                }
-            });
-            var service = new MongoDataService(database.Object, logger.Object, options.Object);
-            Task TestCode() => service.ReadAsync<object>(x => true);
+        //[Fact]
+        //public async Task UpdateAsyncThrowsForNullExpression()
+        //{
+        //    // Arrange
+        //    var database = Of<IMongoDatabase>();
+        //    var logger = Of<ILogger<MongoDataService>>();
+        //    var options = new MongoDataOptions();
+        //    options.Setup(x => x.Value).Returns(new MongoDataOptions
+        //    {
+        //        CollectionNames = new Dictionary<string, string>
+        //        {
+        //            { typeof(object).Name, "Objects" }
+        //        }
+        //    });
+        //    var service = new MongoDataService(database, logger, options.Object);
+        //    Task TestCode() => service.UpdateAsync(default, new object());
 
-            // Act
-            var response = await Assert.ThrowsAsync<Exception>(TestCode).ConfigureAwait(false);
+        //    // Act / Assert
+        //    var exception = await Assert.ThrowsAsync<ArgumentNullException>(TestCode).ConfigureAwait(false);
+        //    Assert.Equal("expression", exception.ParamName);
+        //}
 
-            // Assert
-            Assert.Equal(exception.Message, response.Message);
-            logger.As<ILogger>().Verify(DataReadStart.IsLoggedWith(Information), Once);
-            logger.As<ILogger>().Verify(DataReadError.IsLoggedWith(Error, exception), Once);
-        }
+        //[Fact]
+        //public async Task UpdateAsyncThrowsForNullRecord()
+        //{
+        //    // Arrange
+        //    var database = Of<IMongoDatabase>();
+        //    var logger = Of<ILogger<MongoDataService>>();
+        //    var options = new MongoDataOptions();
+        //    options.Setup(x => x.Value).Returns(new MongoDataOptions
+        //    {
+        //        CollectionNames = new Dictionary<string, string>
+        //        {
+        //            { typeof(object).Name, "Objects" }
+        //        }
+        //    });
+        //    var service = new MongoDataService(database, logger, options.Object);
+        //    Task TestCode() => service.UpdateAsync<object>(x => true, default);
 
-        [Fact]
-        public async Task UpdateAsyncThrowsForNullExpression()
-        {
-            // Arrange
-            var database = Of<IMongoDatabase>();
-            var logger = Of<ILogger<MongoDataService>>();
-            var options = new MongoDataOptions();
-            options.Setup(x => x.Value).Returns(new MongoDataOptions
-            {
-                CollectionNames = new Dictionary<string, string>
-                {
-                    { typeof(object).Name, "Objects" }
-                }
-            });
-            var service = new MongoDataService(database, logger, options.Object);
-            Task TestCode() => service.UpdateAsync(default, new object());
+        //    // Act / Assert
+        //    var exception = await Assert.ThrowsAsync<ArgumentNullException>(TestCode).ConfigureAwait(false);
+        //    Assert.Equal("record", exception.ParamName);
+        //}
 
-            // Act / Assert
-            var exception = await Assert.ThrowsAsync<ArgumentNullException>(TestCode).ConfigureAwait(false);
-            Assert.Equal("expression", exception.ParamName);
-        }
+        //[Fact]
+        //public async Task UpdateAsync()
+        //{
+        //    // Arrange
+        //    var collection = new Mock<IMongoCollection<object>>();
+        //    var database = new Mock<IMongoDatabase>();
+        //    database.Setup(x => x.GetCollection<object>("Objects", It.IsAny<MongoCollectionSettings>())).Returns(collection.Object);
+        //    var logger = new Mock<ILogger<MongoDataService>>();
+        //    var options = new MongoDataOptions();
+        //    options.Setup(x => x.Value).Returns(new MongoDataOptions
+        //    {
+        //        CollectionNames = new Dictionary<string, string>
+        //        {
+        //            { typeof(object).Name, "Objects" }
+        //        }
+        //    });
+        //    var service = new MongoDataService(database.Object, logger.Object, options.Object);
 
-        [Fact]
-        public async Task UpdateAsyncThrowsForNullRecord()
-        {
-            // Arrange
-            var database = Of<IMongoDatabase>();
-            var logger = Of<ILogger<MongoDataService>>();
-            var options = new MongoDataOptions();
-            options.Setup(x => x.Value).Returns(new MongoDataOptions
-            {
-                CollectionNames = new Dictionary<string, string>
-                {
-                    { typeof(object).Name, "Objects" }
-                }
-            });
-            var service = new MongoDataService(database, logger, options.Object);
-            Task TestCode() => service.UpdateAsync<object>(x => true, default);
+        //    // Act
+        //    await service.UpdateAsync(x => true, new object()).ConfigureAwait(false);
 
-            // Act / Assert
-            var exception = await Assert.ThrowsAsync<ArgumentNullException>(TestCode).ConfigureAwait(false);
-            Assert.Equal("record", exception.ParamName);
-        }
+        //    // Assert
+        //    collection.Verify(x => x.ReplaceOneAsync(It.IsAny<FilterDefinition<object>>(), It.IsAny<object>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()), Once);
+        //    logger.As<ILogger>().Verify(DataUpdateStart.IsLoggedWith(Information), Once);
+        //    logger.As<ILogger>().Verify(DataUpdateEnd.IsLoggedWith(Information), Once);
+        //}
 
-        [Fact]
-        public async Task UpdateAsync()
-        {
-            // Arrange
-            var collection = new Mock<IMongoCollection<object>>();
-            var database = new Mock<IMongoDatabase>();
-            database.Setup(x => x.GetCollection<object>("Objects", It.IsAny<MongoCollectionSettings>())).Returns(collection.Object);
-            var logger = new Mock<ILogger<MongoDataService>>();
-            var options = new MongoDataOptions();
-            options.Setup(x => x.Value).Returns(new MongoDataOptions
-            {
-                CollectionNames = new Dictionary<string, string>
-                {
-                    { typeof(object).Name, "Objects" }
-                }
-            });
-            var service = new MongoDataService(database.Object, logger.Object, options.Object);
+        //[Fact]
+        //public async Task UpdateAsyncInvalid()
+        //{
+        //    // Arrange
+        //    var exception = new Exception("TestException");
+        //    var database = new Mock<IMongoDatabase>();
+        //    database.Setup(x => x.GetCollection<object>("Objects", It.IsAny<MongoCollectionSettings>())).Throws(exception);
+        //    var logger = new Mock<ILogger<MongoDataService>>();
+        //    var options = new MongoDataOptions();
+        //    options.Setup(x => x.Value).Returns(new MongoDataOptions
+        //    {
+        //        CollectionNames = new Dictionary<string, string>
+        //        {
+        //            { typeof(object).Name, "Objects" }
+        //        }
+        //    });
+        //    var service = new MongoDataService(database.Object, logger.Object, options.Object);
+        //    Task TestCode() => service.UpdateAsync(x => true, new object());
 
-            // Act
-            await service.UpdateAsync(x => true, new object()).ConfigureAwait(false);
+        //    // Act
+        //    var response = await Assert.ThrowsAsync<Exception>(TestCode).ConfigureAwait(false);
 
-            // Assert
-            collection.Verify(x => x.ReplaceOneAsync(It.IsAny<FilterDefinition<object>>(), It.IsAny<object>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()), Once);
-            logger.As<ILogger>().Verify(DataUpdateStart.IsLoggedWith(Information), Once);
-            logger.As<ILogger>().Verify(DataUpdateEnd.IsLoggedWith(Information), Once);
-        }
+        //    // Assert
+        //    Assert.Equal(exception.Message, response.Message);
+        //    logger.As<ILogger>().Verify(DataUpdateStart.IsLoggedWith(Information), Once);
+        //    logger.As<ILogger>().Verify(DataUpdateError.IsLoggedWith(Error, exception), Once);
+        //}
 
-        [Fact]
-        public async Task UpdateAsyncInvalid()
-        {
-            // Arrange
-            var exception = new Exception("TestException");
-            var database = new Mock<IMongoDatabase>();
-            database.Setup(x => x.GetCollection<object>("Objects", It.IsAny<MongoCollectionSettings>())).Throws(exception);
-            var logger = new Mock<ILogger<MongoDataService>>();
-            var options = new MongoDataOptions();
-            options.Setup(x => x.Value).Returns(new MongoDataOptions
-            {
-                CollectionNames = new Dictionary<string, string>
-                {
-                    { typeof(object).Name, "Objects" }
-                }
-            });
-            var service = new MongoDataService(database.Object, logger.Object, options.Object);
-            Task TestCode() => service.UpdateAsync(x => true, new object());
+        //[Fact]
+        //public async Task DeleteAsyncThrowsForNullExpression()
+        //{
+        //    // Arrange
+        //    var database = Of<IMongoDatabase>();
+        //    var logger = Of<ILogger<MongoDataService>>();
+        //    var options = new MongoDataOptions();
+        //    options.Setup(x => x.Value).Returns(new MongoDataOptions
+        //    {
+        //        CollectionNames = new Dictionary<string, string>
+        //        {
+        //            { typeof(object).Name, "Objects" }
+        //        }
+        //    });
+        //    var service = new MongoDataService(database, logger, options.Object);
+        //    Task TestCode() => service.DeleteAsync<object>(default);
 
-            // Act
-            var response = await Assert.ThrowsAsync<Exception>(TestCode).ConfigureAwait(false);
+        //    // Act / Assert
+        //    var exception = await Assert.ThrowsAsync<ArgumentNullException>(TestCode).ConfigureAwait(false);
+        //    Assert.Equal("expression", exception.ParamName);
+        //}
 
-            // Assert
-            Assert.Equal(exception.Message, response.Message);
-            logger.As<ILogger>().Verify(DataUpdateStart.IsLoggedWith(Information), Once);
-            logger.As<ILogger>().Verify(DataUpdateError.IsLoggedWith(Error, exception), Once);
-        }
+        //[Fact]
+        //public async Task DeleteAsync()
+        //{
+        //    // Arrange
+        //    var collection = new Mock<IMongoCollection<object>>();
+        //    var database = new Mock<IMongoDatabase>();
+        //    database.Setup(x => x.GetCollection<object>("Objects", It.IsAny<MongoCollectionSettings>())).Returns(collection.Object);
+        //    var logger = new Mock<ILogger<MongoDataService>>();
+        //    var options = new MongoDataOptions();
+        //    options.Setup(x => x.Value).Returns(new MongoDataOptions
+        //    {
+        //        CollectionNames = new Dictionary<string, string>
+        //        {
+        //            { typeof(object).Name, "Objects" }
+        //        }
+        //    });
+        //    var service = new MongoDataService(database.Object, logger.Object, options.Object);
 
-        [Fact]
-        public async Task DeleteAsyncThrowsForNullExpression()
-        {
-            // Arrange
-            var database = Of<IMongoDatabase>();
-            var logger = Of<ILogger<MongoDataService>>();
-            var options = new MongoDataOptions();
-            options.Setup(x => x.Value).Returns(new MongoDataOptions
-            {
-                CollectionNames = new Dictionary<string, string>
-                {
-                    { typeof(object).Name, "Objects" }
-                }
-            });
-            var service = new MongoDataService(database, logger, options.Object);
-            Task TestCode() => service.DeleteAsync<object>(default);
+        //    // Act
+        //    await service.DeleteAsync<object>(x => true).ConfigureAwait(false);
 
-            // Act / Assert
-            var exception = await Assert.ThrowsAsync<ArgumentNullException>(TestCode).ConfigureAwait(false);
-            Assert.Equal("expression", exception.ParamName);
-        }
+        //    // Assert
+        //    collection.Verify(x => x.DeleteOneAsync(It.IsAny<FilterDefinition<object>>(), It.IsAny<DeleteOptions>(), It.IsAny<CancellationToken>()), Once);
+        //    logger.As<ILogger>().Verify(DataDeleteStart.IsLoggedWith(Information), Once);
+        //    logger.As<ILogger>().Verify(DataDeleteEnd.IsLoggedWith(Information), Once);
+        //}
 
-        [Fact]
-        public async Task DeleteAsync()
-        {
-            // Arrange
-            var collection = new Mock<IMongoCollection<object>>();
-            var database = new Mock<IMongoDatabase>();
-            database.Setup(x => x.GetCollection<object>("Objects", It.IsAny<MongoCollectionSettings>())).Returns(collection.Object);
-            var logger = new Mock<ILogger<MongoDataService>>();
-            var options = new MongoDataOptions();
-            options.Setup(x => x.Value).Returns(new MongoDataOptions
-            {
-                CollectionNames = new Dictionary<string, string>
-                {
-                    { typeof(object).Name, "Objects" }
-                }
-            });
-            var service = new MongoDataService(database.Object, logger.Object, options.Object);
+        //[Fact]
+        //public async Task DeleteAsyncInvalid()
+        //{
+        //    // Arrange
+        //    var exception = new Exception("TestException");
+        //    var database = new Mock<IMongoDatabase>();
+        //    database.Setup(x => x.GetCollection<object>("Objects", It.IsAny<MongoCollectionSettings>())).Throws(exception);
+        //    var logger = new Mock<ILogger<MongoDataService>>();
+        //    var options = new MongoDataOptions();
+        //    options.Setup(x => x.Value).Returns(new MongoDataOptions
+        //    {
+        //        CollectionNames = new Dictionary<string, string>
+        //        {
+        //            { typeof(object).Name, "Objects" }
+        //        }
+        //    });
+        //    var service = new MongoDataService(database.Object, logger.Object, options.Object);
+        //    Task TestCode() => service.DeleteAsync<object>(x => true);
 
-            // Act
-            await service.DeleteAsync<object>(x => true).ConfigureAwait(false);
+        //    // Act
+        //    var response = await Assert.ThrowsAsync<Exception>(TestCode).ConfigureAwait(false);
 
-            // Assert
-            collection.Verify(x => x.DeleteOneAsync(It.IsAny<FilterDefinition<object>>(), It.IsAny<DeleteOptions>(), It.IsAny<CancellationToken>()), Once);
-            logger.As<ILogger>().Verify(DataDeleteStart.IsLoggedWith(Information), Once);
-            logger.As<ILogger>().Verify(DataDeleteEnd.IsLoggedWith(Information), Once);
-        }
+        //    // Assert
+        //    Assert.Equal(exception.Message, response.Message);
+        //    logger.As<ILogger>().Verify(DataDeleteStart.IsLoggedWith(Information), Once);
+        //    logger.As<ILogger>().Verify(DataDeleteError.IsLoggedWith(Error, exception), Once);
+        //}
 
-        [Fact]
-        public async Task DeleteAsyncInvalid()
-        {
-            // Arrange
-            var exception = new Exception("TestException");
-            var database = new Mock<IMongoDatabase>();
-            database.Setup(x => x.GetCollection<object>("Objects", It.IsAny<MongoCollectionSettings>())).Throws(exception);
-            var logger = new Mock<ILogger<MongoDataService>>();
-            var options = new MongoDataOptions();
-            options.Setup(x => x.Value).Returns(new MongoDataOptions
-            {
-                CollectionNames = new Dictionary<string, string>
-                {
-                    { typeof(object).Name, "Objects" }
-                }
-            });
-            var service = new MongoDataService(database.Object, logger.Object, options.Object);
-            Task TestCode() => service.DeleteAsync<object>(x => true);
+        //[Fact]
+        //public void List()
+        //{
+        //    // Arrange
+        //    var collection = new Mock<IMongoCollection<object>>();
+        //    var database = new Mock<IMongoDatabase>();
+        //    database.Setup(x => x.GetCollection<object>("Objects", It.IsAny<MongoCollectionSettings>())).Returns(collection.Object);
+        //    var logger = new Mock<ILogger<MongoDataService>>();
+        //    var options = new MongoDataOptions();
+        //    options.Setup(x => x.Value).Returns(new MongoDataOptions
+        //    {
+        //        CollectionNames = new Dictionary<string, string>
+        //        {
+        //            { typeof(object).Name, "Objects" }
+        //        }
+        //    });
+        //    var service = new MongoDataService(database.Object, logger.Object, options.Object);
 
-            // Act
-            var response = await Assert.ThrowsAsync<Exception>(TestCode).ConfigureAwait(false);
+        //    // Act
+        //    service.Query<object>();
 
-            // Assert
-            Assert.Equal(exception.Message, response.Message);
-            logger.As<ILogger>().Verify(DataDeleteStart.IsLoggedWith(Information), Once);
-            logger.As<ILogger>().Verify(DataDeleteError.IsLoggedWith(Error, exception), Once);
-        }
+        //    // Assert
+        //    logger.As<ILogger>().Verify(DataListStart.IsLoggedWith(Information), Once);
+        //    logger.As<ILogger>().Verify(DataListEnd.IsLoggedWith(Information), Once);
+        //}
 
-        [Fact]
-        public void List()
-        {
-            // Arrange
-            var collection = new Mock<IMongoCollection<object>>();
-            var database = new Mock<IMongoDatabase>();
-            database.Setup(x => x.GetCollection<object>("Objects", It.IsAny<MongoCollectionSettings>())).Returns(collection.Object);
-            var logger = new Mock<ILogger<MongoDataService>>();
-            var options = new MongoDataOptions();
-            options.Setup(x => x.Value).Returns(new MongoDataOptions
-            {
-                CollectionNames = new Dictionary<string, string>
-                {
-                    { typeof(object).Name, "Objects" }
-                }
-            });
-            var service = new MongoDataService(database.Object, logger.Object, options.Object);
+        //[Fact]
+        //public void ListInvalid()
+        //{
+        //    // Arrange
+        //    var exception = new Exception("TestException");
+        //    var database = new Mock<IMongoDatabase>();
+        //    database.Setup(x => x.GetCollection<object>("Objects", It.IsAny<MongoCollectionSettings>())).Throws(exception);
+        //    var logger = new Mock<ILogger<MongoDataService>>();
+        //    var options = new MongoDataOptions();
+        //    options.Setup(x => x.Value).Returns(new MongoDataOptions
+        //    {
+        //        CollectionNames = new Dictionary<string, string>
+        //        {
+        //            { typeof(object).Name, "Objects" }
+        //        }
+        //    });
+        //    var service = new MongoDataService(database.Object, logger.Object, options.Object);
+        //    object TestCode() => service.Query<object>();
 
-            // Act
-            service.Query<object>();
+        //    // Act
+        //    var response = Assert.Throws<Exception>(TestCode);
 
-            // Assert
-            logger.As<ILogger>().Verify(DataListStart.IsLoggedWith(Information), Once);
-            logger.As<ILogger>().Verify(DataListEnd.IsLoggedWith(Information), Once);
-        }
-
-        [Fact]
-        public void ListInvalid()
-        {
-            // Arrange
-            var exception = new Exception("TestException");
-            var database = new Mock<IMongoDatabase>();
-            database.Setup(x => x.GetCollection<object>("Objects", It.IsAny<MongoCollectionSettings>())).Throws(exception);
-            var logger = new Mock<ILogger<MongoDataService>>();
-            var options = new MongoDataOptions();
-            options.Setup(x => x.Value).Returns(new MongoDataOptions
-            {
-                CollectionNames = new Dictionary<string, string>
-                {
-                    { typeof(object).Name, "Objects" }
-                }
-            });
-            var service = new MongoDataService(database.Object, logger.Object, options.Object);
-            object TestCode() => service.Query<object>();
-
-            // Act
-            var response = Assert.Throws<Exception>(TestCode);
-
-            // Assert
-            Assert.Equal(exception.Message, response.Message);
-            logger.As<ILogger>().Verify(DataListStart.IsLoggedWith(Information), Once);
-            logger.As<ILogger>().Verify(DataListError.IsLoggedWith(Error, exception), Once);
-        }
+        //    // Assert
+        //    Assert.Equal(exception.Message, response.Message);
+        //    logger.As<ILogger>().Verify(DataListStart.IsLoggedWith(Information), Once);
+        //    logger.As<ILogger>().Verify(DataListError.IsLoggedWith(Error, exception), Once);
+        //}
     }
 }

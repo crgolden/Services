@@ -2,45 +2,25 @@
 {
     using System;
     using global::IBM.Data.DB2.Core;
-    using Microsoft.Extensions.Options;
-    using Moq;
     using Xunit;
-    using static Common.DbServiceType;
 
     public class IBMDbServiceTests
     {
-        private readonly Mock<IOptions<IBMDbOptions>> _ibmDbOptions;
+        private readonly DB2ConnectionStringBuilder _db2ConnectionStringBuilder;
 
         public IBMDbServiceTests()
         {
-            _ibmDbOptions = new Mock<IOptions<IBMDbOptions>>();
-            _ibmDbOptions.Setup(x => x.Value).Returns(new IBMDbOptions
-            {
-                Database = nameof(IBMDbOptions.Database),
-                DBName = nameof(IBMDbOptions.DBName),
-                UserId = nameof(IBMDbOptions.UserId),
-                Password = nameof(IBMDbOptions.Password)
-            });
+            _db2ConnectionStringBuilder = new DB2ConnectionStringBuilder();
         }
 
         [Fact]
         public void ThrowsForInvalidOptions()
         {
             // Arrange
-            static object TestCode() => new IBMDbService(default);
+            IBMDbService TestCode() => new IBMDbService(default);
 
             // Assert
             Assert.Throws<ArgumentNullException>(TestCode);
-        }
-
-        [Fact]
-        public void Type()
-        {
-            // Arrange
-            var ibmDbService = new IBMDbService(_ibmDbOptions.Object);
-
-            // Assert
-            Assert.Equal(IBM, ibmDbService.Type);
         }
 
         [Fact]
@@ -48,7 +28,7 @@
         {
             // Arrange
             const string name = "TestName";
-            var ibmDbService = new IBMDbService(_ibmDbOptions.Object)
+            var ibmDbService = new IBMDbService(_db2ConnectionStringBuilder)
             {
                 Name = name
             };
@@ -61,7 +41,7 @@
         public void CanCreateDataSourceEnumerator()
         {
             // Arrange
-            var ibmDbService = new IBMDbService(_ibmDbOptions.Object);
+            var ibmDbService = new IBMDbService(_db2ConnectionStringBuilder);
 
             // Assert
             Assert.True(ibmDbService.CanCreateDataSourceEnumerator);
@@ -71,7 +51,7 @@
         public void CreateCommand()
         {
             // Arrange
-            var ibmDbService = new IBMDbService(_ibmDbOptions.Object);
+            var ibmDbService = new IBMDbService(_db2ConnectionStringBuilder);
 
             // Act
             var command = ibmDbService.CreateCommand();
@@ -84,7 +64,7 @@
         public void CreateCommandBuilder()
         {
             // Arrange
-            var ibmDbService = new IBMDbService(_ibmDbOptions.Object);
+            var ibmDbService = new IBMDbService(_db2ConnectionStringBuilder);
 
             // Act
             var commandBuilder = ibmDbService.CreateCommandBuilder();
@@ -97,7 +77,7 @@
         public void CreateConnection()
         {
             // Arrange
-            var ibmDbService = new IBMDbService(_ibmDbOptions.Object);
+            var ibmDbService = new IBMDbService(_db2ConnectionStringBuilder);
 
             // Act
             var connection = ibmDbService.CreateConnection();
@@ -110,24 +90,20 @@
         public void CreateConnectionStringBuilder()
         {
             // Arrange
-            var ibmDbService = new IBMDbService(_ibmDbOptions.Object);
+            var ibmDbService = new IBMDbService(_db2ConnectionStringBuilder);
 
             // Act
             var connectionStringBuilder = ibmDbService.CreateConnectionStringBuilder();
 
             // Assert
-            var ibmConnectionStringBuilder = Assert.IsType<DB2ConnectionStringBuilder>(connectionStringBuilder);
-            Assert.Equal(_ibmDbOptions.Object.Value.Database, ibmConnectionStringBuilder.Database);
-            Assert.Equal(_ibmDbOptions.Object.Value.DBName, ibmConnectionStringBuilder.DBName);
-            Assert.Equal(_ibmDbOptions.Object.Value.UserId, ibmConnectionStringBuilder.UserID);
-            Assert.Equal(_ibmDbOptions.Object.Value.Password, ibmConnectionStringBuilder.Password);
+            Assert.IsType<DB2ConnectionStringBuilder>(connectionStringBuilder);
         }
 
         [Fact]
         public void CreateDataAdapter()
         {
             // Arrange
-            var ibmDbService = new IBMDbService(_ibmDbOptions.Object);
+            var ibmDbService = new IBMDbService(_db2ConnectionStringBuilder);
 
             // Act
             var dataAdapter = ibmDbService.CreateDataAdapter();
@@ -140,7 +116,7 @@
         public void CreateParameter()
         {
             // Arrange
-            var ibmDbService = new IBMDbService(_ibmDbOptions.Object);
+            var ibmDbService = new IBMDbService(_db2ConnectionStringBuilder);
 
             // Act
             var parameter = ibmDbService.CreateParameter();
@@ -153,7 +129,7 @@
         public void CreateDataSourceEnumerator()
         {
             // Arrange
-            var ibmDbService = new IBMDbService(_ibmDbOptions.Object);
+            var ibmDbService = new IBMDbService(_db2ConnectionStringBuilder);
 
             // Act
             var dataSourceEnumerator = ibmDbService.CreateDataSourceEnumerator();

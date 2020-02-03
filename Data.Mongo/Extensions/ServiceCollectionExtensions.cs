@@ -1,18 +1,18 @@
-﻿namespace Services.Extensions
+﻿namespace Microsoft.Extensions.DependencyInjection
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using Common;
+    using Configuration;
     using JetBrains.Annotations;
-    using Microsoft.Extensions.Configuration;
-    using Microsoft.Extensions.DependencyInjection;
-    using Microsoft.Extensions.Options;
     using MongoDB.Driver;
     using Options;
+    using Services;
+    using Services.Options;
     using static System.String;
-    using static Constants.ExceptionMessages;
-    using static Microsoft.Extensions.DependencyInjection.ServiceDescriptor;
+    using static ServiceDescriptor;
+    using static Services.Constants.ExceptionMessages;
 
     /// <summary>A class with methods that extend <see cref="IServiceCollection"/>.</summary>
     [PublicAPI]

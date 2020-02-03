@@ -61,7 +61,6 @@
         protected IMongoDatabase Database { get; }
 
         /// <inheritdoc />
-        /// <exception cref="ArgumentNullException"><paramref name="record"/> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentException">Collection name not found for <typeparamref name="T"/>.</exception>
         public virtual Task<T> CreateAsync<T>(T record, CancellationToken cancellationToken = default)
             where T : class
@@ -111,7 +110,6 @@
         }
 
         /// <inheritdoc />
-        /// <exception cref="ArgumentNullException"><paramref name="records"/> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentException">Collection name not found for <typeparamref name="T"/>.</exception>
         public virtual Task<IEnumerable<T>> CreateRangeAsync<T>(IEnumerable<T> records, CancellationToken cancellationToken = default)
             where T : class
@@ -162,7 +160,6 @@
         }
 
         /// <inheritdoc />
-        /// <exception cref="ArgumentNullException"><paramref name="predicate"/> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentException">Collection name not found for <typeparamref name="T"/>.</exception>
         public virtual Task DeleteAsync<T>(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
             where T : class
@@ -203,14 +200,13 @@
         }
 
         /// <inheritdoc />
-        /// <exception cref="ArgumentNullException"><paramref name="keyValuePairs"/> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentException">Collection name not found for <typeparamref name="T"/>.</exception>
-        public virtual Task DeleteRangeAsync<T>(IDictionary<Expression<Func<T, bool>>, T> keyValuePairs, CancellationToken cancellationToken = default)
+        public virtual Task DeleteRangeAsync<T>(IEnumerable<Expression<Func<T, bool>>> expressions, CancellationToken cancellationToken = default)
             where T : class
         {
-            if (keyValuePairs == default)
+            if (expressions == null)
             {
-                throw new ArgumentNullException(nameof(keyValuePairs));
+                throw new ArgumentNullException(nameof(expressions));
             }
 
             var type = typeof(T);
@@ -220,33 +216,10 @@
             }
 
             var collection = Database.GetCollection<T>(collectionName, Options.MongoCollectionSettings);
-            if (!Options.UseClientSession)
-            {
-                IEnumerable<WriteModel<T>> requests = from keyValuePair in keyValuePairs
-                    where keyValuePair.Key != default
-                    select new DeleteOneModel<T>(keyValuePair.Key);
-                return collection.BulkWriteAsync(requests, Options.BulkWriteOptions, cancellationToken);
-            }
-
-            async Task DeleteRangeAsync()
-            {
-                if (Session == default)
-                {
-                    Session = await Client.StartSessionAsync(Options.ClientSessionOptions, cancellationToken).ConfigureAwait(false);
-                }
-
-                if (!Session.IsInTransaction)
-                {
-                    Session.StartTransaction(Options.TransactionOptions);
-                }
-
-                IEnumerable<WriteModel<T>> requests = from keyValuePair in keyValuePairs
-                    where keyValuePair.Key != default
-                    select new DeleteOneModel<T>(keyValuePair.Key);
-                await collection.BulkWriteAsync(Session, requests, Options.BulkWriteOptions, cancellationToken).ConfigureAwait(false);
-            }
-
-            return DeleteRangeAsync();
+            var requests = from expression in expressions select new DeleteOneModel<T>(expression);
+            return Options.UseClientSession
+                ? BulkWriteAsync(collection, requests, cancellationToken)
+                : collection.BulkWriteAsync(requests, Options.BulkWriteOptions, cancellationToken);
         }
 
         /// <inheritdoc />
@@ -314,7 +287,6 @@
         }
 
         /// <inheritdoc />
-        /// <exception cref="ArgumentNullException"><paramref name="keyValuePairs"/> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentException">Collection name not found for <typeparamref name="T"/>.</exception>
         public virtual Task UpdateRangeAsync<T>(IDictionary<Expression<Func<T, bool>>, T> keyValuePairs, CancellationToken cancellationToken = default)
             where T : class
@@ -331,33 +303,12 @@
             }
 
             var collection = Database.GetCollection<T>(collectionName, Options.MongoCollectionSettings);
-            if (!Options.UseClientSession)
-            {
-                IEnumerable<WriteModel<T>> requests = from keyValuePair in keyValuePairs
-                    where keyValuePair.Key != default && keyValuePair.Value != null
-                    select new ReplaceOneModel<T>(keyValuePair.Key, keyValuePair.Value);
-                return collection.BulkWriteAsync(requests, Options.BulkWriteOptions, cancellationToken);
-            }
-
-            async Task UpdateRangeAsync()
-            {
-                if (Session == default)
-                {
-                    Session = await Client.StartSessionAsync(Options.ClientSessionOptions, cancellationToken).ConfigureAwait(false);
-                }
-
-                if (!Session.IsInTransaction)
-                {
-                    Session.StartTransaction(Options.TransactionOptions);
-                }
-
-                IEnumerable<WriteModel<T>> requests = from keyValuePair in keyValuePairs
-                    where keyValuePair.Key != default && keyValuePair.Value != null
-                    select new ReplaceOneModel<T>(keyValuePair.Key, keyValuePair.Value);
-                await collection.BulkWriteAsync(Session, requests, Options.BulkWriteOptions, cancellationToken).ConfigureAwait(false);
-            }
-
-            return UpdateRangeAsync();
+            var requests = from keyValuePair in keyValuePairs
+                where keyValuePair.Key != default && keyValuePair.Value != null
+                select new ReplaceOneModel<T>(keyValuePair.Key, keyValuePair.Value);
+            return Options.UseClientSession
+                ? BulkWriteAsync(collection, requests, cancellationToken)
+                : collection.BulkWriteAsync(requests, Options.BulkWriteOptions, cancellationToken);
         }
 
         /// <inheritdoc />
@@ -689,12 +640,12 @@
         /// <inheritdoc />
         /// <exception cref="ArgumentException">
         /// <paramref name="keyValues"/> does not contain exactly one key value or
-        /// -or-
+        /// or
         /// collection name not found for <typeparamref name="T"/>.
         /// </exception>
         /// <exception cref="InvalidOperationException">
         /// Class map not found for <typeparamref name="T"/>
-        /// -or-
+        /// or
         /// id member not found for <typeparamref name="T"/>.
         /// </exception>
         public ValueTask<T> GetAsync<T>(object[] keyValues, CancellationToken cancellationToken = default)
@@ -728,12 +679,11 @@
                 throw new InvalidOperationException($"Id member not found for '{type.Name}'");
             }
 
-            var filter = Builders<T>.Filter.Eq(id.ElementName, keyValues[0]);
-            var collection = Database.GetCollection<T>(collectionName, Options.MongoCollectionSettings);
-
             async ValueTask<T> GetAsync()
             {
-                var cursor = await collection.FindAsync<T>(filter, default, cancellationToken).ConfigureAwait(false);
+                var cursor = await Database
+                    .GetCollection<T>(collectionName, Options.MongoCollectionSettings)
+                    .FindAsync<T>(Builders<T>.Filter.Eq(id.ElementName, keyValues[0]), default, cancellationToken).ConfigureAwait(false);
                 return await cursor.SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
             }
 
@@ -1125,6 +1075,42 @@
             }
 
             _disposedValue = true;
+        }
+
+        /// <summary>Bulks writes <paramref name="requests"/> using <paramref name="collection"/>.</summary>
+        /// <typeparam name="T">The type of <paramref name="collection"/>.</typeparam>
+        /// <param name="collection">The collection.</param>
+        /// <param name="requests">The requests.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A task.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="collection"/> is <see langword="null"/>.</exception>
+        protected virtual Task BulkWriteAsync<T>(
+            IMongoCollection<T> collection,
+            IEnumerable<WriteModel<T>> requests,
+            CancellationToken cancellationToken)
+            where T : class
+        {
+            if (collection == default)
+            {
+                throw new ArgumentNullException(nameof(collection));
+            }
+
+            async Task BulkWriteAsync()
+            {
+                if (Session == default)
+                {
+                    Session = await Client.StartSessionAsync(Options.ClientSessionOptions, cancellationToken).ConfigureAwait(false);
+                }
+
+                if (!Session.IsInTransaction)
+                {
+                    Session.StartTransaction(Options.TransactionOptions);
+                }
+
+                await collection.BulkWriteAsync(Session, requests, Options.BulkWriteOptions, cancellationToken).ConfigureAwait(false);
+            }
+
+            return BulkWriteAsync();
         }
     }
 }

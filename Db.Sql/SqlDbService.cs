@@ -4,34 +4,30 @@
     using System.Data.Common;
     using System.Data.SqlClient;
     using Common;
-    using Microsoft.Extensions.Options;
-    using static Common.DbServiceType;
+    using JetBrains.Annotations;
 
     /// <inheritdoc cref="IDbService" />
+    [PublicAPI]
     public class SqlDbService : DbProviderFactory, IDbService
     {
         private readonly SqlConnectionStringBuilder _connectionStringBuilder;
 
-        public SqlDbService(IOptions<SqlDbOptions>? sqlDbOptions)
+        /// <summary>Initializes a new instance of the <see cref="SqlDbService"/> class.</summary>
+        /// <param name="sqlConnectionStringBuilder">The SQL connection string builder.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="sqlConnectionStringBuilder"/>is <see langword="null"/>.</exception>
+        public SqlDbService(SqlConnectionStringBuilder sqlConnectionStringBuilder)
         {
-            if (sqlDbOptions?.Value == default)
-            {
-                throw new ArgumentNullException(nameof(sqlDbOptions));
-            }
-
-            _connectionStringBuilder = new SqlConnectionStringBuilder
-            {
-                DataSource = sqlDbOptions.Value.DataSource,
-                UserID = sqlDbOptions.Value.UserId,
-                Password = sqlDbOptions.Value.Password
-            };
+            _connectionStringBuilder = sqlConnectionStringBuilder ?? throw new ArgumentNullException(nameof(sqlConnectionStringBuilder));
         }
 
         /// <inheritdoc />
-        public string? Name { get; set; }
+        public string Name { get; set; }
 
         /// <inheritdoc />
-        public DbServiceType Type => Sql;
+        public bool CanCreateDataAdapter => true;
+
+        /// <inheritdoc />
+        public bool CanCreateCommandBuilder => true;
 
         /// <inheritdoc cref="IDbService" />
         public override DbCommand CreateCommand() => new SqlCommand();

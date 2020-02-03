@@ -5,75 +5,62 @@
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Extensions.DependencyInjection;
+    using JetBrains.Annotations;
     using Microsoft.Extensions.Hosting;
-    using Microsoft.Extensions.Logging;
     using Quartz;
     using Quartz.Spi;
-    using static System.DateTime;
-    using static Common.EventId;
 
     /// <inheritdoc />
+    [PublicAPI]
     public class QuartzJobService : IHostedService
     {
-        private readonly IServiceProvider _services;
+        private readonly ISchedulerFactory _schedulerFactory;
+        private readonly IJobFactory _jobFactory;
         private readonly IReadOnlyDictionary<IJobDetail, IReadOnlyCollection<ITrigger>> _triggersAndJobs;
-        private readonly ILogger<QuartzJobService> _logger;
 
+        /// <summary>Initializes a new instance of the <see cref="QuartzJobService"/> class.</summary>
+        /// <param name="schedulerFactory">The scheduler factory.</param>
+        /// <param name="jobFactory">The job factory.</param>
+        /// <param name="jobDetails">The job details.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="schedulerFactory"/> is <see langword="null"/>
+        /// or
+        /// <paramref name="jobFactory"/> is <see langword="null"/>
+        /// or
+        /// <paramref name="jobDetails"/> is <see langword="null"/>.</exception>
         public QuartzJobService(
-            IServiceProvider? services,
-            IEnumerable<IJob>? jobDetails,
-            ILogger<QuartzJobService>? logger)
+            ISchedulerFactory schedulerFactory,
+            IJobFactory jobFactory,
+            IEnumerable<IJob> jobDetails)
         {
-            _services = services ?? throw new ArgumentNullException(nameof(services));
+            _schedulerFactory = schedulerFactory ?? throw new ArgumentNullException(nameof(schedulerFactory));
+            _jobFactory = jobFactory ?? throw new ArgumentNullException(nameof(jobFactory));
             if (jobDetails == null)
             {
                 throw new ArgumentNullException(nameof(jobDetails));
             }
 
             _triggersAndJobs = GetTriggersAndJobs(jobDetails);
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         /// <inheritdoc />
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            using (var scope = _services.CreateScope())
-            {
-                var schedulerFactory = scope.ServiceProvider.GetRequiredService<ISchedulerFactory>();
-                var jobFactory = scope.ServiceProvider.GetRequiredService<IJobFactory>();
-                var scheduler = await schedulerFactory.GetScheduler(cancellationToken).ConfigureAwait(false);
-                scheduler.JobFactory = jobFactory;
-                await scheduler.ScheduleJobs(_triggersAndJobs, true, cancellationToken).ConfigureAwait(false);
-                await scheduler.Start(cancellationToken).ConfigureAwait(false);
-            }
-
-            _logger.LogInformation(
-                eventId: new EventId((int)HostedServiceStart, $"{HostedServiceStart}"),
-                message: "Quartz Job Service Started at {@Time}",
-                args: new object[] { UtcNow });
+            var scheduler = await _schedulerFactory.GetScheduler(cancellationToken).ConfigureAwait(false);
+            scheduler.JobFactory = _jobFactory;
+            await scheduler.ScheduleJobs(_triggersAndJobs, true, cancellationToken).ConfigureAwait(false);
+            await scheduler.Start(cancellationToken).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
         public async Task StopAsync(CancellationToken cancellationToken)
         {
-            using (var scope = _services.CreateScope())
-            {
-                var schedulerFactory = scope.ServiceProvider.GetRequiredService<ISchedulerFactory>();
-                var scheduler = await schedulerFactory.GetScheduler(cancellationToken).ConfigureAwait(false);
-                var jobKeys = _triggersAndJobs.Keys.Select(x => x.Key).ToArray();
-                await scheduler.DeleteJobs(jobKeys, cancellationToken).ConfigureAwait(false);
-                await scheduler.Shutdown(cancellationToken).ConfigureAwait(false);
-            }
-
-            _logger.LogInformation(
-                eventId: new EventId((int)HostedServiceStop, $"{HostedServiceStop}"),
-                message: "Quartz Job Service Stopped at {@Time}",
-                args: new object[] { UtcNow });
+            var scheduler = await _schedulerFactory.GetScheduler(cancellationToken).ConfigureAwait(false);
+            var jobKeys = _triggersAndJobs.Keys.Select(x => x.Key).ToArray();
+            await scheduler.DeleteJobs(jobKeys, cancellationToken).ConfigureAwait(false);
+            await scheduler.Shutdown(cancellationToken).ConfigureAwait(false);
         }
 
-        private static IReadOnlyDictionary<IJobDetail, IReadOnlyCollection<ITrigger>> GetTriggersAndJobs(
-            IEnumerable<IJob> jobDetails)
+        private static IReadOnlyDictionary<IJobDetail, IReadOnlyCollection<ITrigger>> GetTriggersAndJobs(IEnumerable<IJob> jobDetails)
         {
             var triggersAndJobs = new Dictionary<IJobDetail, IReadOnlyCollection<ITrigger>>();
             foreach (var jobDetail in jobDetails.Where(x => x is QuartzJobDetail).Cast<QuartzJobDetail>())

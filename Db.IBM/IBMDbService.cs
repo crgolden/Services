@@ -5,39 +5,34 @@
     using System.Diagnostics.CodeAnalysis;
     using Common;
     using IBM.Data.DB2.Core;
-    using Microsoft.Extensions.Options;
-    using static Common.DbServiceType;
+    using JetBrains.Annotations;
 
     /// <inheritdoc cref="IDbService" />
+    [PublicAPI]
     [SuppressMessage("Minor Code Smell", "S101:Types should be named in PascalCase", Justification = "IBM is an abbreviation")]
     public class IBMDbService : DbProviderFactory, IDbService
     {
         private readonly DB2ConnectionStringBuilder _connectionStringBuilder;
 
-        public IBMDbService(IOptions<IBMDbOptions>? ibmDbOptions)
+        /// <summary>Initializes a new instance of the <see cref="IBMDbService"/> class.</summary>
+        /// <param name="db2ConnectionStringBuilder">The DB2 connection string builder.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="db2ConnectionStringBuilder"/> is <see langword="null"/>.</exception>
+        public IBMDbService(DB2ConnectionStringBuilder db2ConnectionStringBuilder)
         {
-            if (ibmDbOptions?.Value == default)
-            {
-                throw new ArgumentNullException(nameof(ibmDbOptions));
-            }
-
-            _connectionStringBuilder = new DB2ConnectionStringBuilder
-            {
-                Database = ibmDbOptions.Value.Database,
-                DBName = ibmDbOptions.Value.DBName,
-                UserID = ibmDbOptions.Value.UserId,
-                Password = ibmDbOptions.Value.Password
-            };
+            _connectionStringBuilder = db2ConnectionStringBuilder ?? throw new ArgumentNullException(nameof(db2ConnectionStringBuilder));
         }
 
         /// <inheritdoc />
-        public string? Name { get; set; }
-
-        /// <inheritdoc />
-        public DbServiceType Type => IBM;
+        public string Name { get; set; }
 
         /// <inheritdoc cref="IDbService" />
         public override bool CanCreateDataSourceEnumerator => true;
+
+        /// <inheritdoc />
+        public bool CanCreateDataAdapter => true;
+
+        /// <inheritdoc />
+        public bool CanCreateCommandBuilder => true;
 
         /// <inheritdoc cref="IDbService" />
         public override DbCommand CreateCommand() => new DB2Command();

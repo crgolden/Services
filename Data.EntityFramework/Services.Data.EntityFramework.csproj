@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Services</RootNamespace>
-    <LangVersion>latest</LangVersion>
+    <LangVersion>7.3</LangVersion>
     <PackageId>Services.Data.EntityFramework</PackageId>
     <Version>1.0.0-beta2</Version>
     <Company>crgolden</Company>
@@ -19,7 +19,6 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageIcon>deeprog.png</PackageIcon>
     <RepositoryType>git</RepositoryType>
-    <CodeAnalysisRuleSet>..\.ruleset</CodeAnalysisRuleSet>
     <SkipDefaultEditorConfigAsAdditionalFile>true</SkipDefaultEditorConfigAsAdditionalFile>
   </PropertyGroup>
 
@@ -40,16 +39,15 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Analyzers" Version="3.1.1" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="3.1.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="3.1.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="3.1.1" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="3.1.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.1" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="3.1.1" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="SonarAnalyzer.CSharp" Version="8.2.0.14119">
+    <PackageReference Include="SonarAnalyzer.CSharp" Version="8.3.0.14607">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
@@ -61,6 +59,7 @@
   
   <ItemGroup>
     <ProjectReference Include="..\..\Common\Abstractions\Common.Abstractions.csproj" />
+    <ProjectReference Include="..\..\Common\Enums\Common.Enums.csproj" />
   </ItemGroup>
 
 </Project>

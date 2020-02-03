@@ -9,6 +9,7 @@
     using Common;
     using JetBrains.Annotations;
     using Microsoft.EntityFrameworkCore;
+    using static System.Linq.Enumerable;
     using static System.String;
     using static System.Threading.Tasks.Task;
 
@@ -39,7 +40,6 @@
         protected DbContext Context { get; }
 
         /// <inheritdoc />
-        /// <exception cref="ArgumentNullException"><paramref name="record"/> is <see langword="null" />.</exception>
         public virtual Task<T> CreateAsync<T>(T record, CancellationToken cancellationToken = default)
             where T : class
         {
@@ -53,7 +53,6 @@
         }
 
         /// <inheritdoc />
-        /// <exception cref="ArgumentNullException"><paramref name="records"/> is <see langword="null" />.</exception>
         public virtual Task<IEnumerable<T>> CreateRangeAsync<T>(IEnumerable<T> records, CancellationToken cancellationToken = default)
             where T : class
         {
@@ -68,7 +67,6 @@
         }
 
         /// <inheritdoc />
-        /// <exception cref="ArgumentNullException"><paramref name="predicate"/> is <see langword="null" />.</exception>
         public virtual Task DeleteAsync<T>(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
             where T : class
         {
@@ -92,16 +90,16 @@
         }
 
         /// <inheritdoc />
-        /// <exception cref="ArgumentNullException"><paramref name="keyValuePairs"/> is <see langword="null" />.</exception>
-        public virtual Task DeleteRangeAsync<T>(IDictionary<Expression<Func<T, bool>>, T> keyValuePairs, CancellationToken cancellationToken = default)
+        public virtual Task DeleteRangeAsync<T>(IEnumerable<Expression<Func<T, bool>>> expressions, CancellationToken cancellationToken = default)
             where T : class
         {
-            if (keyValuePairs == default)
+            if (expressions == null)
             {
-                throw new ArgumentNullException(nameof(keyValuePairs));
+                throw new ArgumentNullException(nameof(expressions));
             }
 
-            Context.Set<T>().RemoveRange(keyValuePairs.Values);
+            var query = expressions.Aggregate(Empty<T>().AsQueryable(), (current, next) => current.Union(current.Where(next)));
+            Context.Set<T>().RemoveRange(query);
             return CompletedTask;
         }
 
@@ -112,7 +110,6 @@
         }
 
         /// <inheritdoc />
-        /// <exception cref="ArgumentNullException"><paramref name="predicate"/> or <paramref name="record"/> is <see langword="null" />.</exception>
         public virtual Task UpdateAsync<T>(Expression<Func<T, bool>> predicate, T record, CancellationToken cancellationToken = default)
             where T : class
         {
@@ -126,7 +123,6 @@
         }
 
         /// <inheritdoc />
-        /// <exception cref="ArgumentNullException"><paramref name="keyValuePairs"/> is <see langword="null" />.</exception>
         public virtual Task UpdateRangeAsync<T>(IDictionary<Expression<Func<T, bool>>, T> keyValuePairs, CancellationToken cancellationToken = default)
             where T : class
         {

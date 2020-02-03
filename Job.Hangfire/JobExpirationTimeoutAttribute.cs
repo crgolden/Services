@@ -1,6 +1,7 @@
 ﻿namespace Services
 {
     using System;
+    using Hangfire.Annotations;
     using Hangfire.Common;
     using Hangfire.States;
     using Hangfire.Storage;
@@ -9,11 +10,15 @@
     // https://discuss.hangfire.io/t/how-to-configure-the-retention-time-of-job
 
     /// <inheritdoc cref="IApplyStateFilter" />
+    [PublicAPI]
     public class JobExpirationTimeoutAttribute : JobFilterAttribute, IApplyStateFilter
     {
         private readonly TimeSpan _jobExpirationTimeout;
 
-        public JobExpirationTimeoutAttribute(IOptions<HangfireJobOptions>? hangfireJobOptions)
+        /// <summary>Initializes a new instance of the <see cref="JobExpirationTimeoutAttribute"/> class.</summary>
+        /// <param name="hangfireJobOptions">The hangfire job options.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="hangfireJobOptions"/> is <see langword="null"/>.</exception>
+        public JobExpirationTimeoutAttribute(IOptions<HangfireJobOptions> hangfireJobOptions)
         {
             if (hangfireJobOptions?.Value == default)
             {

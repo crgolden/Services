@@ -6,72 +6,45 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Common;
-    using Microsoft.Extensions.Logging;
+    using JetBrains.Annotations;
     using SmartyStreets;
-    using static System.DateTime;
     using static System.Linq.Enumerable;
     using static System.Threading.Tasks.Task;
-    using static Common.EventId;
-    using static Microsoft.Extensions.Logging.LogLevel;
-    using EventId = Microsoft.Extensions.Logging.EventId;
     using InternationalLookup = SmartyStreets.InternationalStreetApi.Lookup;
     using UsLookup = SmartyStreets.USStreetApi.Lookup;
 
     /// <inheritdoc />
+    [PublicAPI]
     public class SmartyStreetsAddressService : IAddressService
     {
         private readonly IClient<UsLookup> _usClient;
         private readonly IClient<InternationalLookup> _internationalClient;
-        private readonly ILogger<SmartyStreetsAddressService> _logger;
 
+        /// <summary>Initializes a new instance of the <see cref="SmartyStreetsAddressService"/> class.</summary>
+        /// <param name="usClient">The us client.</param>
+        /// <param name="internationalClient">The international client.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="usClient"/> is <see langword="null"/>
+        /// or
+        /// <paramref name="internationalClient"/> is <see langword="null"/>.</exception>
         [SuppressMessage("StyleCop.CSharp.NamingRules", "SA1305:Field names should not use Hungarian notation", Justification = "Lowercased US")]
-        public SmartyStreetsAddressService(
-            IClient<UsLookup>? usClient,
-            IClient<InternationalLookup>? internationalClient,
-            ILogger<SmartyStreetsAddressService>? logger)
+        public SmartyStreetsAddressService(IClient<UsLookup> usClient, IClient<InternationalLookup> internationalClient)
         {
             _usClient = usClient ?? throw new ArgumentNullException(nameof(usClient));
             _internationalClient = internationalClient ?? throw new ArgumentNullException(nameof(internationalClient));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         /// <inheritdoc />
-        public Task<IEnumerable<Address>> ValidateAsync(
-            Address? address,
-            LogLevel logLevel = Information,
-            CancellationToken cancellationToken = default)
+        public Task<IEnumerable<Address>> ValidateAsync(Address address, CancellationToken cancellationToken = default)
         {
             if (address == default)
             {
                 throw new ArgumentNullException(nameof(address));
             }
 
-            try
-            {
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)AddressValidateStart, $"{AddressValidateStart}"),
-                    message: "Validating address {@Address} at {@Time}",
-                    args: new object[] { address, UtcNow });
-                var addresses = new[] { "US", "USA", "CA", "CAN" }.Contains(address.Country)
-                    ? ValidateUsAddress(address)
-                    : ValidateInternationalAddress(address);
-                _logger.Log(
-                    logLevel: logLevel,
-                    eventId: new EventId((int)AddressValidateEnd, $"{AddressValidateEnd}"),
-                    message: "Validated address {@Address} with result {@Addresses} at {@Time}",
-                    args: new object[] { address, addresses, UtcNow });
-                return FromResult(addresses);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(
-                    eventId: new EventId((int)AddressValidateError, $"{AddressValidateError}"),
-                    exception: e,
-                    message: "Error validating address {@Address} at {@Time}",
-                    args: new object[] { address, UtcNow });
-                throw;
-            }
+            var addresses = new[] { "US", "USA", "CA", "CAN" }.Contains(address.Country)
+                ? ValidateUsAddress(address)
+                : ValidateInternationalAddress(address);
+            return FromResult(addresses);
         }
 
         private IEnumerable<Address> ValidateUsAddress(Address address)

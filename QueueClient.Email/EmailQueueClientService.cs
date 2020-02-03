@@ -5,127 +5,72 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Common;
-    using Microsoft.Azure.ServiceBus;
+    using JetBrains.Annotations;
+    using Microsoft.Azure.ServiceBus.Core;
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
-    using Microsoft.Extensions.Options;
-    using static System.DateTime;
     using static System.Text.Encoding;
     using static System.Threading.Tasks.Task;
-    using static Common.EventId;
-    using static Microsoft.Azure.ServiceBus.TransportType;
-    using EventId = Microsoft.Extensions.Logging.EventId;
 
     /// <inheritdoc cref="IHostedService" />
-    public class EmailQueueClientService : QueueClient, IHostedService
+    [PublicAPI]
+    public class EmailQueueClientService : IHostedService
     {
         private readonly IEmailService _emailService;
+        private readonly IReceiverClient _receiverClient;
         private readonly ILogger<EmailQueueClientService> _logger;
 
-        public EmailQueueClientService(
-            IOptions<EmailQueueClientOptions>? emailQueueClientOptions,
-            IEmailService? emailService,
-            ILogger<EmailQueueClientService>? logger,
-            IHostApplicationLifetime? hostApplicationLifetime)
-            : base(emailQueueClientOptions?.Value == default
-                  ? throw new ArgumentNullException(nameof(emailQueueClientOptions))
-                  : new ServiceBusConnectionStringBuilder(
-                      endpoint: emailQueueClientOptions.Value.Endpoint,
-                      entityPath: emailQueueClientOptions.Value.EmailQueueName,
-                      sharedAccessKeyName: emailQueueClientOptions.Value.SharedAccessKeyName,
-                      sharedAccessKey: emailQueueClientOptions.Value.PrimaryKey,
-                      transportType: Amqp))
+        /// <summary>Initializes a new instance of the <see cref="EmailQueueClientService"/> class.</summary>
+        /// <param name="emailService">The email service.</param>
+        /// <param name="receiverClient">The queue client.</param>
+        /// <param name="logger">The logger.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="emailService"/> is <see langword="null"/>
+        /// or
+        /// <paramref name="receiverClient"/> is <see langword="null"/>
+        /// or
+        /// <paramref name="logger"/> is <see langword="null"/>.</exception>
+        public EmailQueueClientService(IEmailService emailService, IReceiverClient receiverClient, ILogger<EmailQueueClientService> logger)
         {
             _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
+            _receiverClient = receiverClient ?? throw new ArgumentNullException(nameof(receiverClient));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            if (hostApplicationLifetime == default)
-            {
-                throw new ArgumentNullException(nameof(hostApplicationLifetime));
-            }
-
-            hostApplicationLifetime.ApplicationStarted.Register(OnStarted);
-            hostApplicationLifetime.ApplicationStopping.Register(OnStopping);
         }
 
         /// <inheritdoc />
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            RegisterMessageHandler(
-                handler: ProcessMessagesAsync,
-                messageHandlerOptions: new MessageHandlerOptions(ExceptionReceivedHandler)
+            _receiverClient.RegisterMessageHandler(
+                async (message, token) =>
                 {
-                    AutoComplete = false
+                    if (!message.UserProperties.ContainsKey("source") || !(message.UserProperties["source"] is string source) ||
+                        !message.UserProperties.ContainsKey("destinations") || !(message.UserProperties["destinations"] is IEnumerable<string> destinations) ||
+                        !message.UserProperties.ContainsKey("subject") || !(message.UserProperties["subject"] is string subject))
+                    {
+                        throw new ArgumentException("Invalid User Properties", nameof(message));
+                    }
+
+                    await _emailService.SendEmailAsync(
+                        source: source,
+                        destinations: destinations,
+                        subject: subject,
+                        htmlBody: UTF8.GetString(message.Body),
+                        textBody: default,
+                        cancellationToken: token).ConfigureAwait(false);
+                    await _receiverClient.CompleteAsync(message.SystemProperties.LockToken).ConfigureAwait(false);
+                },
+                args =>
+                {
+                    _logger.LogError(
+                        eventId: new EventId(1, nameof(Exception)),
+                        exception: args.Exception,
+                        message: "{@Context}",
+                        args: new object[] { args.ExceptionReceivedContext });
+                    return CompletedTask;
                 });
             return CompletedTask;
         }
 
         /// <inheritdoc />
-        public Task StopAsync(CancellationToken cancellationToken)
-        {
-            return CloseAsync();
-        }
-
-        private void OnStarted()
-        {
-            _logger.LogInformation(
-                eventId: new EventId((int)HostedServiceStart, $"{HostedServiceStart}"),
-                message: "Email queue client starting at {Time}",
-                args: new object[] { UtcNow });
-        }
-
-        private void OnStopping()
-        {
-            _logger.LogInformation(
-                eventId: new EventId((int)HostedServiceStop, $"{HostedServiceStop}"),
-                message: "Email queue client stopping at {Time}",
-                args: new object[] { UtcNow });
-        }
-
-        private Task ProcessMessagesAsync(Message message, CancellationToken cancellationToken)
-        {
-            if (!message.UserProperties.ContainsKey("source") || !(message.UserProperties["source"] is string source) ||
-                !message.UserProperties.ContainsKey("destinations") || !(message.UserProperties["destinations"] is string[] destinations) ||
-                !message.UserProperties.ContainsKey("subject") || !(message.UserProperties["subject"] is string subject))
-            {
-                throw new ArgumentException("Invalid User Properties", nameof(message));
-            }
-
-            return ProcessMessages(message, source, destinations, subject, cancellationToken);
-        }
-
-        private Task ExceptionReceivedHandler(ExceptionReceivedEventArgs exceptionReceivedEventArgs)
-        {
-            _logger.LogError(
-                eventId: new EventId((int)QueueClientError, $"{QueueClientError}"),
-                exception: exceptionReceivedEventArgs.Exception,
-                message: "Email queue client received exception {Context} at {Time}",
-                args: new object[] { exceptionReceivedEventArgs.ExceptionReceivedContext, UtcNow });
-            return CompletedTask;
-        }
-
-        private async Task ProcessMessages(
-            Message message,
-            string source,
-            IEnumerable<string> destinations,
-            string subject,
-            CancellationToken cancellationToken)
-        {
-            _logger.LogInformation(
-                eventId: new EventId((int)QueueClientProcessing, $"{QueueClientProcessing}"),
-                message: "Email queue client processing at {Time}",
-                args: new object[] { UtcNow });
-            await _emailService.SendEmailAsync(
-                source: source,
-                destinations: destinations,
-                subject: subject,
-                htmlBody: UTF8.GetString(message.Body),
-                textBody: default,
-                cancellationToken: cancellationToken).ConfigureAwait(false);
-            await CompleteAsync(message.SystemProperties.LockToken).ConfigureAwait(false);
-            _logger.LogInformation(
-                eventId: new EventId((int)QueueClientCompleted, $"{QueueClientCompleted}"),
-                message: "Email queue client completed at {Time}",
-                args: new object[] { UtcNow });
-        }
+        public Task StopAsync(CancellationToken cancellationToken) => _receiverClient.CloseAsync();
     }
 }

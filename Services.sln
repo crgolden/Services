@@ -7,7 +7,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 		.gitignore = .gitignore
-		.ruleset = .ruleset
 		deeprog.png = deeprog.png
 		NuGet.Config = NuGet.Config
 		README.md = README.md
@@ -68,6 +67,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Common.Enums", "..\Common\Enums\Common.Enums.csproj", "{C7A9F1A1-106D-4F81-9035-068962D1FF9D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Common.Claims", "..\Common\Claims\Common.Claims.csproj", "{A14B8744-9BD6-4E80-8159-7D90A41A42D5}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Common.Helpers", "..\Common\Helpers\Common.Helpers.csproj", "{EFE46620-AD80-4CD2-AED0-8330199DE96E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -293,6 +294,14 @@ Global
 		{A14B8744-9BD6-4E80-8159-7D90A41A42D5}.Release|Any CPU.Build.0 = Release|Any CPU
 		{A14B8744-9BD6-4E80-8159-7D90A41A42D5}.Release|x64.ActiveCfg = Release|Any CPU
 		{A14B8744-9BD6-4E80-8159-7D90A41A42D5}.Release|x64.Build.0 = Release|Any CPU
+		{EFE46620-AD80-4CD2-AED0-8330199DE96E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EFE46620-AD80-4CD2-AED0-8330199DE96E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EFE46620-AD80-4CD2-AED0-8330199DE96E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{EFE46620-AD80-4CD2-AED0-8330199DE96E}.Debug|x64.Build.0 = Debug|Any CPU
+		{EFE46620-AD80-4CD2-AED0-8330199DE96E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EFE46620-AD80-4CD2-AED0-8330199DE96E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EFE46620-AD80-4CD2-AED0-8330199DE96E}.Release|x64.ActiveCfg = Release|Any CPU
+		{EFE46620-AD80-4CD2-AED0-8330199DE96E}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

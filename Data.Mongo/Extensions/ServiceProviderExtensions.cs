@@ -1,22 +1,24 @@
-﻿namespace Services.Extensions
+﻿namespace System
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Threading;
-    using System.Threading.Tasks;
+    using Collections.Generic;
     using Common;
+    using JetBrains.Annotations;
+    using Linq;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Options;
     using MongoDB.Bson.Serialization;
     using MongoDB.Driver;
-    using static System.String;
-    using static System.StringComparison;
-    using static System.Threading.Tasks.Task;
-    using static Constants.ExceptionMessages;
+    using Services;
+    using Threading;
+    using Threading.Tasks;
     using static MongoDB.Bson.Serialization.BsonClassMap;
+    using static Services.Constants.ExceptionMessages;
+    using static String;
+    using static StringComparison;
+    using static Threading.Tasks.Task;
 
     /// <summary>A class with methods that extend <see cref="IServiceProvider"/>.</summary>
+    [PublicAPI]
     public static class ServiceProviderExtensions
     {
         /// <summary>Registers all <paramref name="keyValuePairs"/> values and adds all <paramref name="keyValuePairs"/> keys to the <see cref="MongoDataOptions"/> instance identified by <paramref name="name"/>.</summary>
@@ -139,12 +141,12 @@
                 throw new ArgumentException(CollectionNameNotFound(type.Name));
             }
 
-            var database = client.GetDatabase(options.DatabaseName, options.DatabaseSettings);
-            var collection = database.GetCollection<TDocument>(collectionName, options.MongoCollectionSettings);
-
             async Task<IServiceProvider> BuildIndexesAsync()
             {
-                await collection.Indexes.CreateManyAsync(indexModels, options.CreateManyIndexesOptions, cancellationToken).ConfigureAwait(false);
+                await client
+                    .GetDatabase(options.DatabaseName, options.DatabaseSettings)
+                    .GetCollection<TDocument>(collectionName, options.MongoCollectionSettings)
+                    .Indexes.CreateManyAsync(indexModels, options.CreateManyIndexesOptions, cancellationToken).ConfigureAwait(false);
                 return provider;
             }
 
@@ -200,10 +202,9 @@
                 throw new ArgumentException(CollectionNameNotFound(type.Name));
             }
 
-            var collection = database.GetCollection<TDocument>(collectionName, options.MongoCollectionSettings);
-
             async Task<IServiceProvider> SeedDataAsync()
             {
+                var collection = database.GetCollection<TDocument>(collectionName, options.MongoCollectionSettings);
                 var count = await collection.CountDocumentsAsync(FilterDefinition<TDocument>.Empty, options.CountOptions, cancellationToken).ConfigureAwait(false);
                 if (count <= 0)
                 {

@@ -2,44 +2,25 @@
 {
     using System;
     using System.Data.SqlClient;
-    using Microsoft.Extensions.Options;
-    using Moq;
     using Xunit;
-    using static Common.DbServiceType;
 
     public class SqlDbServiceTests
     {
-        private readonly Mock<IOptions<SqlDbOptions>> _sqlDbOptions;
+        private readonly SqlConnectionStringBuilder _sqlConnectionStringBuilder;
 
         public SqlDbServiceTests()
         {
-            _sqlDbOptions = new Mock<IOptions<SqlDbOptions>>();
-            _sqlDbOptions.Setup(x => x.Value).Returns(new SqlDbOptions
-            {
-                DataSource = nameof(SqlDbOptions.DataSource),
-                UserId = nameof(SqlDbOptions.UserId),
-                Password = nameof(SqlDbOptions.Password)
-            });
+            _sqlConnectionStringBuilder = new SqlConnectionStringBuilder();
         }
 
         [Fact]
         public void ThrowsForInvalidOptions()
         {
             // Arrange
-            static object TestCode() => new SqlDbService(default);
+            SqlDbService TestCode() => new SqlDbService(default);
 
             // Assert
             Assert.Throws<ArgumentNullException>(TestCode);
-        }
-
-        [Fact]
-        public void Provider()
-        {
-            // Arrange
-            var sqlDbService = new SqlDbService(_sqlDbOptions.Object);
-
-            // Assert
-            Assert.Equal(Sql, sqlDbService.Type);
         }
 
         [Fact]
@@ -47,7 +28,7 @@
         {
             // Arrange
             const string name = "TestName";
-            var sqlDbService = new SqlDbService(_sqlDbOptions.Object)
+            var sqlDbService = new SqlDbService(_sqlConnectionStringBuilder)
             {
                 Name = name
             };
@@ -60,7 +41,7 @@
         public void CreateCommand()
         {
             // Arrange
-            var sqlDbService = new SqlDbService(_sqlDbOptions.Object);
+            var sqlDbService = new SqlDbService(_sqlConnectionStringBuilder);
 
             // Act
             var command = sqlDbService.CreateCommand();
@@ -73,7 +54,7 @@
         public void CreateCommandBuilder()
         {
             // Arrange
-            var sqlDbService = new SqlDbService(_sqlDbOptions.Object);
+            var sqlDbService = new SqlDbService(_sqlConnectionStringBuilder);
 
             // Act
             var commandBuilder = sqlDbService.CreateCommandBuilder();
@@ -86,7 +67,7 @@
         public void CreateConnection()
         {
             // Arrange
-            var sqlDbService = new SqlDbService(_sqlDbOptions.Object);
+            var sqlDbService = new SqlDbService(_sqlConnectionStringBuilder);
 
             // Act
             var connection = sqlDbService.CreateConnection();
@@ -99,23 +80,20 @@
         public void CreateConnectionStringBuilder()
         {
             // Arrange
-            var sqlDbService = new SqlDbService(_sqlDbOptions.Object);
+            var sqlDbService = new SqlDbService(_sqlConnectionStringBuilder);
 
             // Act
             var connectionStringBuilder = sqlDbService.CreateConnectionStringBuilder();
 
             // Assert
-            var sqlConnectionStringBuilder = Assert.IsType<SqlConnectionStringBuilder>(connectionStringBuilder);
-            Assert.Equal(_sqlDbOptions.Object.Value.DataSource, sqlConnectionStringBuilder.DataSource);
-            Assert.Equal(_sqlDbOptions.Object.Value.UserId, sqlConnectionStringBuilder.UserID);
-            Assert.Equal(_sqlDbOptions.Object.Value.Password, sqlConnectionStringBuilder.Password);
+            Assert.IsType<SqlConnectionStringBuilder>(connectionStringBuilder);
         }
 
         [Fact]
         public void CreateDataAdapter()
         {
             // Arrange
-            var sqlDbService = new SqlDbService(_sqlDbOptions.Object);
+            var sqlDbService = new SqlDbService(_sqlConnectionStringBuilder);
 
             // Act
             var dataAdapter = sqlDbService.CreateDataAdapter();
@@ -128,7 +106,7 @@
         public void CreateParameter()
         {
             // Arrange
-            var sqlDbService = new SqlDbService(_sqlDbOptions.Object);
+            var sqlDbService = new SqlDbService(_sqlConnectionStringBuilder);
 
             // Act
             var parameter = sqlDbService.CreateParameter();

@@ -7,33 +7,37 @@
     using System.Threading.Tasks;
     using Hangfire;
     using Hangfire.Server;
-    using Microsoft.Extensions.DependencyInjection;
+    using JetBrains.Annotations;
     using Microsoft.Extensions.Hosting;
-    using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Options;
-    using static System.DateTime;
     using static System.String;
     using static System.Threading.Tasks.Task;
-    using static Common.EventId;
     using static Hangfire.GlobalJobFilters;
     using static Hangfire.JobStorage;
 
     /// <inheritdoc />
+    [PublicAPI]
     public class HangfireJobService : IHostedService
     {
-        private readonly IServiceProvider _services;
+        private readonly IRecurringJobManager _recurringJobManager;
         private readonly IEnumerable<HangfireJobDetail> _jobDetails;
-        private readonly ILogger<HangfireJobService> _logger;
 
+        /// <summary>Initializes a new instance of the <see cref="HangfireJobService"/> class.</summary>
+        /// <param name="recurringJobManager">The recurring job manager.</param>
+        /// <param name="jobDetails">The job details.</param>
+        /// <param name="hangfireJobOptions">The hangfire job options.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="recurringJobManager"/> is <see langword="null"/>
+        /// or
+        /// <paramref name="jobDetails"/> is <see langword="null"/>
+        /// or
+        /// <paramref name="hangfireJobOptions"/> is <see langword="null"/>.</exception>
         public HangfireJobService(
-            IServiceProvider? services,
-            IEnumerable<HangfireJobDetail>? jobDetails,
-            IOptions<HangfireJobOptions>? hangfireJobOptions,
-            ILogger<HangfireJobService>? logger)
+            IRecurringJobManager recurringJobManager,
+            IEnumerable<HangfireJobDetail> jobDetails,
+            IOptions<HangfireJobOptions> hangfireJobOptions)
         {
-            _services = services ?? throw new ArgumentNullException(nameof(services));
+            _recurringJobManager = recurringJobManager ?? throw new ArgumentNullException(nameof(recurringJobManager));
             _jobDetails = jobDetails ?? throw new ArgumentNullException(nameof(jobDetails));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             if (hangfireJobOptions?.Value == default)
             {
                 throw new ArgumentNullException(nameof(hangfireJobOptions));
@@ -42,6 +46,13 @@
             Filters.Add(new JobExpirationTimeoutAttribute(hangfireJobOptions));
         }
 
+        /// <summary>Gets the compare date.</summary>
+        /// <param name="context">The context.</param>
+        /// <param name="methodName">Name of the method.</param>
+        /// <returns>The compare date.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="context"/> is <see langword="null"/>
+        /// or
+        /// <paramref name="methodName"/> is <see langword="null"/>.</exception>
         public static DateTime? GetCompareDate(PerformContext context, string methodName)
         {
             if (context == default)
@@ -49,7 +60,7 @@
                 throw new ArgumentNullException(nameof(context));
             }
 
-            if (IsNullOrEmpty(methodName))
+            if (IsNullOrWhiteSpace(methodName))
             {
                 throw new ArgumentNullException(nameof(methodName));
             }
@@ -65,42 +76,26 @@
         /// <inheritdoc />
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            using (var scope = _services.CreateScope())
+            foreach (var jobDetail in _jobDetails)
             {
-                var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
-                foreach (var jobDetail in _jobDetails)
-                {
-                    recurringJobManager.AddOrUpdate(
-                        recurringJobId: jobDetail.Id,
-                        job: jobDetail.Job,
-                        cronExpression: jobDetail.CronExpression,
-                        options: jobDetail.Options);
-                }
+                _recurringJobManager.AddOrUpdate(
+                    recurringJobId: jobDetail.Id,
+                    job: jobDetail.Job,
+                    cronExpression: jobDetail.CronExpression,
+                    options: jobDetail.Options);
             }
 
-            _logger.LogInformation(
-                eventId: new EventId((int)HostedServiceStart, $"{HostedServiceStart}"),
-                message: "Hangfire Job Service Started at {@Time}",
-                args: new object[] { UtcNow });
             return CompletedTask;
         }
 
         /// <inheritdoc />
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            using (var scope = _services.CreateScope())
+            foreach (var jobDetail in _jobDetails)
             {
-                var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
-                foreach (var jobDetail in _jobDetails)
-                {
-                    recurringJobManager.RemoveIfExists(jobDetail.Id);
-                }
+                _recurringJobManager.RemoveIfExists(jobDetail.Id);
             }
 
-            _logger.LogInformation(
-                eventId: new EventId((int)HostedServiceStop, $"{HostedServiceStop}"),
-                message: "Hangfire Job Service Stopped at {@Time}",
-                args: new object[] { UtcNow });
             return CompletedTask;
         }
     }

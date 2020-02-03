@@ -8,39 +8,34 @@
     using Amazon.SimpleEmail;
     using Amazon.SimpleEmail.Model;
     using Common;
-    using Microsoft.Extensions.Logging;
-    using static System.DateTime;
+    using JetBrains.Annotations;
     using static System.String;
     using static System.Text.Encoding;
-    using static Common.EventId;
-    using static Microsoft.Extensions.Logging.LogLevel;
-    using EventId = Microsoft.Extensions.Logging.EventId;
 
     /// <inheritdoc />
+    [PublicAPI]
     public class AmazonEmailService : IEmailService
     {
         private readonly IAmazonSimpleEmailService _amazonSimpleEmailService;
-        private readonly ILogger<AmazonEmailService> _logger;
 
-        public AmazonEmailService(
-            IAmazonSimpleEmailService? amazonSimpleEmailService,
-            ILogger<AmazonEmailService>? logger)
+        /// <summary>Initializes a new instance of the <see cref="AmazonEmailService"/> class.</summary>
+        /// <param name="amazonSimpleEmailService">The amazon simple email service.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="amazonSimpleEmailService"/> is <see langword="null"/>.</exception>
+        public AmazonEmailService(IAmazonSimpleEmailService amazonSimpleEmailService)
         {
             _amazonSimpleEmailService = amazonSimpleEmailService ?? throw new ArgumentNullException(nameof(amazonSimpleEmailService));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         /// <inheritdoc />
         public Task SendEmailAsync(
-            string? source,
-            IEnumerable<string>? destinations,
-            string? subject,
-            string? htmlBody,
-            string? textBody = default,
-            LogLevel logLevel = Information,
+            string source,
+            IEnumerable<string> destinations,
+            string subject,
+            string htmlBody,
+            string textBody = default,
             CancellationToken cancellationToken = default)
         {
-            if (IsNullOrEmpty(source))
+            if (IsNullOrWhiteSpace(source))
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -56,65 +51,53 @@
                 throw new ArgumentException("No recipients.", nameof(destinations));
             }
 
-            if (IsNullOrEmpty(subject))
+            if (IsNullOrWhiteSpace(subject))
             {
                 throw new ArgumentNullException(nameof(subject));
             }
 
-            if (IsNullOrEmpty(htmlBody))
+            if (IsNullOrWhiteSpace(htmlBody))
             {
                 throw new ArgumentNullException(nameof(htmlBody));
             }
 
-            return SendEmail(source, recipients, subject, htmlBody, textBody, logLevel, cancellationToken);
-        }
-
-        private async Task SendEmail(
-            string source,
-            List<string> recipients,
-            string subject,
-            string htmlBody,
-            string? textBody,
-            LogLevel logLevel,
-            CancellationToken cancellationToken)
-        {
-            var sendEmailRequest = new SendEmailRequest
+            async Task SendEmailAsync()
             {
-                Source = source,
-                Destination = new Destination
+                var sendEmailRequest = new SendEmailRequest
                 {
-                    ToAddresses = recipients
-                },
-                Message = new Message
-                {
-                    Subject = new Content(subject),
-                    Body = new Body
+                    Source = source,
+                    Destination = new Destination
                     {
-                        Html = new Content
+                        ToAddresses = recipients
+                    },
+                    Message = new Message
+                    {
+                        Subject = new Content(subject),
+                        Body = new Body
                         {
-                            Charset = UTF8.HeaderName,
-                            Data = htmlBody
+                            Html = new Content
+                            {
+                                Charset = UTF8.HeaderName,
+                                Data = htmlBody
+                            }
                         }
                     }
-                }
-            };
-            if (!IsNullOrEmpty(textBody))
-            {
-                sendEmailRequest.Message.Body.Text = new Content
-                {
-                    Charset = UTF8.HeaderName,
-                    Data = textBody
                 };
+                if (!IsNullOrWhiteSpace(textBody))
+                {
+                    sendEmailRequest.Message.Body.Text = new Content
+                    {
+                        Charset = UTF8.HeaderName,
+                        Data = textBody
+                    };
+                }
+
+                await _amazonSimpleEmailService
+                    .SendEmailAsync(sendEmailRequest, cancellationToken)
+                    .ConfigureAwait(false);
             }
 
-            var sendEmailResponse = await _amazonSimpleEmailService
-                .SendEmailAsync(sendEmailRequest, cancellationToken)
-                .ConfigureAwait(false);
-            _logger.Log(
-                logLevel: logLevel,
-                eventId: new EventId((int)EmailSent, $"{EmailSent}"),
-                message: "Email request {@Request} sent with response {@Response} at {@Time}",
-                args: new object[] { sendEmailRequest, sendEmailResponse, UtcNow });
+            return SendEmailAsync();
         }
     }
 }

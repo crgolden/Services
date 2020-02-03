@@ -1,9 +1,11 @@
-﻿namespace Services.Extensions
+﻿namespace Microsoft.Extensions.Configuration
 {
     using System;
-    using Microsoft.Extensions.Configuration;
+    using JetBrains.Annotations;
+    using Services;
 
     /// <summary>A class with methods that extend <see cref="IConfiguration"/>.</summary>
+    [PublicAPI]
     public static class ConfigurationExtensions
     {
         /// <summary>Gets the <see cref="MongoDataOptions"/> configuration section.</summary>
