@@ -13,7 +13,7 @@
         /// <returns>The <see cref="SendGridEmailOptions"/> configuration section.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="configuration"/> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentException">The <see cref="SendGridEmailOptions"/> configuration section doesn't exist.</exception>
-        public static IConfigurationSection GetQuartzJobStoreOptionsSection(this IConfiguration configuration)
+        public static IConfigurationSection GetSendGridEmailOptionsSection(this IConfiguration configuration)
         {
             if (configuration == default)
             {

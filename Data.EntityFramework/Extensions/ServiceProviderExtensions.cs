@@ -14,7 +14,7 @@
         /// <param name="provider">The provider.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The <paramref name="provider"/>.</returns>
-        /// <exception cref="System.ArgumentNullException"><paramref name="provider"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="provider"/> is <see langword="null"/>.</exception>
         public static Task<IServiceProvider> MigrateDatabaseAsync(this IServiceProvider provider, CancellationToken cancellationToken = default)
         {
             if (provider == default)

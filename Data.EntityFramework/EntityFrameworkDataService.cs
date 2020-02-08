@@ -23,7 +23,7 @@
         /// <exception cref="ArgumentNullException"><paramref name="context"/> is <see langword="null" /> or <paramref name="name"/> is <see langword="null" />.</exception>
         public EntityFrameworkDataService(DbContext context, string name = nameof(Microsoft.EntityFrameworkCore))
         {
-            if (IsNullOrEmpty(name) || IsNullOrWhiteSpace(name))
+            if (IsNullOrWhiteSpace(name))
             {
                 throw new ArgumentNullException(nameof(name));
             }

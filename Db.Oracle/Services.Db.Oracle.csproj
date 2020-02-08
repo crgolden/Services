@@ -57,7 +57,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Common\Abstractions\Common.Abstractions.csproj" />
-    <ProjectReference Include="..\..\Common\Enums\Common.Enums.csproj" />
   </ItemGroup>
 
 </Project>

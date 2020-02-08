@@ -3,25 +3,15 @@
     using System;
     using Configuration;
     using EntityFrameworkCore;
-    using EntityFrameworkCore.Infrastructure;
     using JetBrains.Annotations;
     using Options;
     using Services;
-    using static System.String;
-    using static Common.DatabaseType;
 
     /// <summary>A class with methods that extend <see cref="IServiceCollection"/>.</summary>
     [PublicAPI]
     public static class ServiceCollectionExtensions
     {
-        /// <summary>
-        /// <para>
-        /// Adds a scoped <see cref="EntityFrameworkDataService"/> to <paramref name="services"/> using the provided <paramref name="configureOptions"/>.
-        /// </para>
-        /// <para>
-        /// <paramref name="optionsAction"/> can be an action on either <see cref="SqlServerDbContextOptionsBuilder"/>, <see cref="SqliteDbContextOptionsBuilder"/>, or <see cref="DbContextOptionsBuilder"/>.
-        /// </para>
-        /// </summary>
+        /// <summary>Adds a scoped <see cref="EntityFrameworkDataService"/> to <paramref name="services"/> using the provided <paramref name="configureOptions"/>.</summary>
         /// <param name="services">The services.</param>
         /// <param name="configureOptions">The configure options.</param>
         /// <param name="optionsAction">The options action.</param>
@@ -54,14 +44,7 @@
             }
         }
 
-        /// <summary>
-        /// <para>
-        /// Adds a scoped <see cref="EntityFrameworkDataService"/> to <paramref name="services"/> using the provided <paramref name="config"/>.
-        /// </para>
-        /// <para>
-        /// <paramref name="optionsAction"/> can be an action on either <see cref="SqlServerDbContextOptionsBuilder"/>, <see cref="SqliteDbContextOptionsBuilder"/>, or <see cref="DbContextOptionsBuilder"/>.
-        /// </para>
-        /// </summary>
+        /// <summary>Adds a scoped <see cref="EntityFrameworkDataService"/> to <paramref name="services"/> using the provided <paramref name="config"/>.</summary>
         /// <param name="services">The services.</param>
         /// <param name="config">The config.</param>
         /// <param name="optionsAction">The options action.</param>
@@ -94,14 +77,7 @@
             }
         }
 
-        /// <summary>
-        /// <para>
-        /// Adds a scoped <see cref="EntityFrameworkDataService"/> to <paramref name="services"/> using the provided <paramref name="config"/> and <paramref name="configureBinder"/>.
-        /// </para>
-        /// <para>
-        /// <paramref name="optionsAction"/> can be an action on either <see cref="SqlServerDbContextOptionsBuilder"/>, <see cref="SqliteDbContextOptionsBuilder"/>, or <see cref="DbContextOptionsBuilder"/>.
-        /// </para>
-        /// </summary>
+        /// <summary>Adds a scoped <see cref="EntityFrameworkDataService"/> to <paramref name="services"/> using the provided <paramref name="config"/> and <paramref name="configureBinder"/>.</summary>
         /// <param name="services">The services.</param>
         /// <param name="config">The config.</param>
         /// <param name="configureBinder">The configure binder.</param>
@@ -149,64 +125,16 @@
             Action<DbContextOptionsBuilder> optionsAction)
             where T : DbContext
         {
+            services.AddScoped<DbContext, T>();
             if (options == default)
             {
                 return services.AddDbContext<T>(optionsAction);
             }
 
-            if (options.DatabaseType == default)
+            if (options.UsePooling && optionsAction != default)
             {
-                return services.AddEntityFrameworkDataService<T>(options.UsePooling, options.PoolSize, optionsAction);
-            }
-
-            switch (options.DatabaseType)
-            {
-                case SqlServer:
-
-                    if (optionsAction is Action<SqlServerDbContextOptionsBuilder> sqlServerOptionsAction &&
-                        !IsNullOrWhiteSpace(options.SqlServerOptions?.ConnectionString))
-                    {
-                        return services.AddEntityFrameworkDataService<T>(
-                            options.UsePooling,
-                            options.PoolSize,
-                            action => action.UseSqlServer(options.SqlServerOptions.ConnectionString, sqlServerOptionsAction));
-                    }
-                    else
-                    {
-                        return services.AddEntityFrameworkDataService<T>(options.UsePooling, options.PoolSize, optionsAction);
-                    }
-
-                case Sqlite:
-                    if (optionsAction is Action<SqliteDbContextOptionsBuilder> sqliteOptionsAction &&
-                        !IsNullOrWhiteSpace(options.SqliteOptions?.ConnectionString))
-                    {
-                        return services.AddEntityFrameworkDataService<T>(
-                            options.UsePooling,
-                            options.PoolSize,
-                            action => action.UseSqlite(options.SqliteOptions.ConnectionString, sqliteOptionsAction));
-                    }
-                    else
-                    {
-                        return services.AddEntityFrameworkDataService<T>(options.UsePooling, options.PoolSize, optionsAction);
-                    }
-
-                default:
-                    return services.AddEntityFrameworkDataService<T>(options.UsePooling, options.PoolSize, optionsAction);
-            }
-        }
-
-        private static IServiceCollection AddEntityFrameworkDataService<T>(
-            this IServiceCollection services,
-            bool usePooling,
-            int? poolSize,
-            Action<DbContextOptionsBuilder> optionsAction)
-            where T : DbContext
-        {
-            services.AddScoped<DbContext, T>();
-            if (usePooling && optionsAction != default)
-            {
-                return poolSize.HasValue
-                    ? services.AddDbContextPool<T>(optionsAction, poolSize.Value)
+                return options.PoolSize.HasValue
+                    ? services.AddDbContextPool<T>(optionsAction, options.PoolSize.Value)
                     : services.AddDbContextPool<T>(optionsAction);
             }
 

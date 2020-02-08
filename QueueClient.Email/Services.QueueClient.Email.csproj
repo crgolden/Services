@@ -34,7 +34,6 @@
 
   <ItemGroup>
     <PackageReference Include="JetBrains.Annotations" Version="2019.1.3" />
-    <PackageReference Include="Microsoft.Azure.ServiceBus" Version="4.1.1" />
     <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.8">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -58,6 +57,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Common\Abstractions\Common.Abstractions.csproj" />
+    <ProjectReference Include="..\..\Core\Azure.ServiceBus\Core.Azure.ServiceBus.csproj" />
   </ItemGroup>
 
 </Project>
