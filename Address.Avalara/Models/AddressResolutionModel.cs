@@ -17,10 +17,12 @@
         [JsonPropertyName("address")]
         public AddressInfo Address { get; set; }
 
-        /// <summary>Gets the validated address or addresses.</summary>
+        /// <summary>Gets or sets the validated address or addresses.</summary>
         /// <value>The validated address or addresses.</value>
+        // https://github.com/dotnet/runtime/issues/30258
         [JsonPropertyName("validatedAddresses")]
-        public IList<ValidatedAddressInfo> ValidatedAddresses { get; } = new List<ValidatedAddressInfo>();
+        [SuppressMessage("Usage", "CA2227:Collection properties should be read only", Justification = "Open Github issue")]
+        public IList<ValidatedAddressInfo> ValidatedAddresses { get; set; } = new List<ValidatedAddressInfo>();
 
         /// <summary>Gets or sets the geospatial coordinates of this address.</summary>
         /// <value>The geospatial coordinates of this address.</value>

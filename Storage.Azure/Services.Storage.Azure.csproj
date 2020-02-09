@@ -5,7 +5,7 @@
     <RootNamespace>Services</RootNamespace>
     <LangVersion>7.3</LangVersion>
     <PackageId>Services.Storage.Azure</PackageId>
-    <Version>1.0.0-beta2</Version>
+    <Version>1.0.0-beta3</Version>
     <Company>crgolden</Company>
     <Authors>Chris Golden</Authors>
     <RepositoryUrl>https://github.com/crgolden/Services</RepositoryUrl>
@@ -33,8 +33,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Common.Abstractions" Version="1.0.0-beta8" />
     <PackageReference Include="JetBrains.Annotations" Version="2019.1.3" />
-    <PackageReference Include="Microsoft.Azure.Storage.Blob" Version="11.1.2" />
+    <PackageReference Include="Microsoft.Azure.Storage.Blob" Version="11.1.3" />
     <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.8">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -53,10 +54,6 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\Common\Abstractions\Common.Abstractions.csproj" />
   </ItemGroup>
 
 </Project>

@@ -7,7 +7,6 @@
     using Options;
     using SendGrid;
     using Services;
-    using Services.Options;
 
     /// <summary>A class with methods that extend <see cref="IServiceCollection"/>.</summary>
     [PublicAPI]
@@ -34,7 +33,7 @@
                 throw new ArgumentNullException(nameof(configureOptions));
             }
 
-            services.AddSingleton<IValidateOptions<SendGridEmailOptions>, ValidateOptions>();
+            services.AddSingleton<IValidateOptions<SendGridEmailOptions>, ValidateSendGridEmailOptions>();
             services.Configure(configureOptions);
             using (var provider = services.BuildServiceProvider(true))
             {
@@ -64,7 +63,7 @@
                 throw new ArgumentNullException(nameof(config));
             }
 
-            services.AddSingleton<IValidateOptions<SendGridEmailOptions>, ValidateOptions>();
+            services.AddSingleton<IValidateOptions<SendGridEmailOptions>, ValidateSendGridEmailOptions>();
             services.Configure<SendGridEmailOptions>(config);
             using (var provider = services.BuildServiceProvider(true))
             {
@@ -103,7 +102,7 @@
                 throw new ArgumentNullException(nameof(configureBinder));
             }
 
-            services.AddSingleton<IValidateOptions<SendGridEmailOptions>, ValidateOptions>();
+            services.AddSingleton<IValidateOptions<SendGridEmailOptions>, ValidateSendGridEmailOptions>();
             services.Configure<SendGridEmailOptions>(config, configureBinder);
             using (var provider = services.BuildServiceProvider(true))
             {

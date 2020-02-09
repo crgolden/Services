@@ -5,7 +5,6 @@
     using JetBrains.Annotations;
     using Options;
     using Services;
-    using Services.Options;
     using Teradata.Client.Provider;
 
     /// <summary>A class with methods that extend <see cref="IServiceCollection"/>.</summary>
@@ -33,7 +32,7 @@
                 throw new ArgumentNullException(nameof(configureOptions));
             }
 
-            services.AddSingleton<IValidateOptions<TeradataDbOptions>, ValidateOptions>();
+            services.AddSingleton<IValidateOptions<TeradataDbOptions>, ValidateTeradataDbOptions>();
             services.Configure(configureOptions);
             using (var provider = services.BuildServiceProvider(true))
             {
@@ -63,7 +62,7 @@
                 throw new ArgumentNullException(nameof(config));
             }
 
-            services.AddSingleton<IValidateOptions<TeradataDbOptions>, ValidateOptions>();
+            services.AddSingleton<IValidateOptions<TeradataDbOptions>, ValidateTeradataDbOptions>();
             services.Configure<TeradataDbOptions>(config);
             using (var provider = services.BuildServiceProvider(true))
             {
@@ -102,7 +101,7 @@
                 throw new ArgumentNullException(nameof(configureBinder));
             }
 
-            services.AddSingleton<IValidateOptions<TeradataDbOptions>, ValidateOptions>();
+            services.AddSingleton<IValidateOptions<TeradataDbOptions>, ValidateTeradataDbOptions>();
             services.Configure<TeradataDbOptions>(config, configureBinder);
             using (var provider = services.BuildServiceProvider(true))
             {

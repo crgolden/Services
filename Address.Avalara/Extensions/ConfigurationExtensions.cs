@@ -13,7 +13,7 @@
         /// <returns>The <see cref="AvalaraAddressOptions"/> configuration section.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="configuration"/> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentException">The <see cref="AvalaraAddressOptions"/> configuration section doesn't exist.</exception>
-        public static IConfigurationSection GetTeradataDbOptionsSection(this IConfiguration configuration)
+        public static IConfigurationSection GetAvalaraAddressOptionsSection(this IConfiguration configuration)
         {
             if (configuration == default)
             {

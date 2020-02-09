@@ -39,7 +39,7 @@
 
             async Task<IEnumerable<Address>> ValidateAsync()
             {
-                AddressResolutionModel addressResolution;
+                AddressResolutionModel result;
                 var stringBuilder = new StringBuilder($"{_httpClient.BaseAddress}/addresses/resolve");
                 stringBuilder.Append($"?line1={address.StreetAddress}");
                 stringBuilder.Append($"&city={address.Locality}");
@@ -51,12 +51,12 @@
                 {
                     response.EnsureSuccessStatusCode();
                     var body = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-                    addressResolution = await DeserializeAsync<AddressResolutionModel>(body, default, cancellationToken).ConfigureAwait(false);
+                    result = await DeserializeAsync<AddressResolutionModel>(body, default, cancellationToken).ConfigureAwait(false);
                 }
 
-                var addresses = addressResolution?.ValidatedAddresses == null
+                var addresses = result?.ValidatedAddresses == null
                     ? Empty<Address>()
-                    : addressResolution.ValidatedAddresses.Select(validatedAddress => new Address
+                    : result.ValidatedAddresses.Select(validatedAddress => new Address
                     {
                         StreetAddress = $"{validatedAddress.Line1} {validatedAddress.Line2} {validatedAddress.Line3}".TrimEnd(),
                         Locality = validatedAddress.City,

@@ -5,7 +5,7 @@
     <RootNamespace>Services</RootNamespace>
     <LangVersion>7.3</LangVersion>
     <PackageId>Services.Job.Quartz</PackageId>
-    <Version>1.0.0-beta2</Version>
+    <Version>1.0.0-beta3</Version>
     <Company>crgolden</Company>
     <Authors>Chris Golden</Authors>
     <RepositoryUrl>https://github.com/crgolden/Services</RepositoryUrl>

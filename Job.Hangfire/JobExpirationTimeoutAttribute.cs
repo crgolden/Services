@@ -7,9 +7,8 @@
     using Hangfire.Storage;
     using Microsoft.Extensions.Options;
 
-    // https://discuss.hangfire.io/t/how-to-configure-the-retention-time-of-job
-
     /// <inheritdoc cref="IApplyStateFilter" />
+    // https://discuss.hangfire.io/t/how-to-configure-the-retention-time-of-job
     [PublicAPI]
     public class JobExpirationTimeoutAttribute : JobFilterAttribute, IApplyStateFilter
     {

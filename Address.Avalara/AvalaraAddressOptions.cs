@@ -1,5 +1,7 @@
 ﻿namespace Services
 {
+    using System;
+    using System.Diagnostics.CodeAnalysis;
     using JetBrains.Annotations;
 
     /// <summary>Configuration settings for the <see cref="AvalaraAddressService"/> class.</summary><summary></summary>
@@ -12,6 +14,7 @@
 
         /// <summary>Gets or sets the base address.</summary>
         /// <value>The base address.</value>
-        public string BaseAddress { get; set; } = "https://sandbox-rest.avatax.com/api/v2";
+        [SuppressMessage("Minor Code Smell", "S1075:URIs should not be hardcoded", Justification = "Default sandbox")]
+        public Uri BaseAddress { get; set; } = new Uri("https://sandbox-rest.avatax.com/api/v2");
     }
 }

@@ -7,7 +7,6 @@
     using JetBrains.Annotations;
     using Options;
     using Services;
-    using Services.Options;
 
     /// <summary>A class with methods that extend <see cref="IServiceCollection"/>.</summary>
     [PublicAPI]
@@ -34,7 +33,7 @@
                 throw new ArgumentNullException(nameof(configureOptions));
             }
 
-            services.AddSingleton<IValidateOptions<AvalaraAddressOptions>, ValidateOptions>();
+            services.AddSingleton<IValidateOptions<AvalaraAddressOptions>, ValidateAvalaraAddressOptions>();
             services.Configure(configureOptions);
             using (var provider = services.BuildServiceProvider(true))
             {
@@ -64,7 +63,7 @@
                 throw new ArgumentNullException(nameof(config));
             }
 
-            services.AddSingleton<IValidateOptions<AvalaraAddressOptions>, ValidateOptions>();
+            services.AddSingleton<IValidateOptions<AvalaraAddressOptions>, ValidateAvalaraAddressOptions>();
             services.Configure<AvalaraAddressOptions>(config);
             using (var provider = services.BuildServiceProvider(true))
             {
@@ -103,7 +102,7 @@
                 throw new ArgumentNullException(nameof(configureBinder));
             }
 
-            services.AddSingleton<IValidateOptions<AvalaraAddressOptions>, ValidateOptions>();
+            services.AddSingleton<IValidateOptions<AvalaraAddressOptions>, ValidateAvalaraAddressOptions>();
             services.Configure<AvalaraAddressOptions>(config, configureBinder);
             using (var provider = services.BuildServiceProvider(true))
             {
@@ -119,7 +118,7 @@
                 httpClient =>
                 {
                     httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", options.LicenseKey);
-                    httpClient.BaseAddress = new Uri(options.BaseAddress);
+                    httpClient.BaseAddress = options.BaseAddress;
                     httpClient.DefaultRequestHeaders.Accept.Clear();
                     httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 });

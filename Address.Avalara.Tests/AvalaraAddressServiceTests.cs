@@ -27,17 +27,6 @@
         }
 
         [Fact]
-        public void ThrowsForNullLogger()
-        {
-            // Arrange
-            AvalaraAddressService TestCode() => new AvalaraAddressService(Of<IHttpClientFactory>());
-
-            // Act / Assert
-            var exception = Assert.Throws<ArgumentNullException>(TestCode);
-            Assert.Equal("logger", exception.ParamName);
-        }
-
-        [Fact]
         public async Task ValidateAsyncThrowsForNullAddress()
         {
             // Arrange

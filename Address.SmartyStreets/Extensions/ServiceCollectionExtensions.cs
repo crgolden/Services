@@ -6,7 +6,6 @@
     using JetBrains.Annotations;
     using Options;
     using Services;
-    using Services.Options;
     using SmartyStreets;
     using InternationalLookup = SmartyStreets.InternationalStreetApi.Lookup;
     using UsLookup = SmartyStreets.USStreetApi.Lookup;
@@ -36,7 +35,7 @@
                 throw new ArgumentNullException(nameof(configureOptions));
             }
 
-            services.AddSingleton<IValidateOptions<SmartyStreetsAddressOptions>, ValidateOptions>();
+            services.AddSingleton<IValidateOptions<SmartyStreetsAddressOptions>, ValidateSmartyStreetsAddressOptions>();
             services.Configure(configureOptions);
             using (var provider = services.BuildServiceProvider(true))
             {
@@ -66,7 +65,7 @@
                 throw new ArgumentNullException(nameof(config));
             }
 
-            services.AddSingleton<IValidateOptions<SmartyStreetsAddressOptions>, ValidateOptions>();
+            services.AddSingleton<IValidateOptions<SmartyStreetsAddressOptions>, ValidateSmartyStreetsAddressOptions>();
             services.Configure<SmartyStreetsAddressOptions>(config);
             using (var provider = services.BuildServiceProvider(true))
             {
@@ -105,7 +104,7 @@
                 throw new ArgumentNullException(nameof(configureBinder));
             }
 
-            services.AddSingleton<IValidateOptions<SmartyStreetsAddressOptions>, ValidateOptions>();
+            services.AddSingleton<IValidateOptions<SmartyStreetsAddressOptions>, ValidateSmartyStreetsAddressOptions>();
             services.Configure<SmartyStreetsAddressOptions>(config, configureBinder);
             using (var provider = services.BuildServiceProvider(true))
             {

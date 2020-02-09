@@ -9,7 +9,6 @@
     using MongoDB.Driver;
     using Options;
     using Services;
-    using Services.Options;
     using static System.String;
     using static ServiceDescriptor;
     using static Services.Constants.ExceptionMessages;
@@ -172,14 +171,14 @@
 
         private static IServiceCollection AddMongo(this IServiceCollection services, string name)
         {
-            if (services.All(x => x.ImplementationType != typeof(ValidateOptions)))
+            if (services.All(x => x.ImplementationType != typeof(ValidateMongoDataOptions)))
             {
-                services.AddSingleton<IValidateOptions<MongoDataOptions>, ValidateOptions>();
+                services.AddSingleton<IValidateOptions<MongoDataOptions>, ValidateMongoDataOptions>();
             }
 
-            if (services.All(x => x.ImplementationType != typeof(ConfigureOptions)))
+            if (services.All(x => x.ImplementationType != typeof(ConfigureMongoDataOptions)))
             {
-                services.AddSingleton<IConfigureOptions<MongoDataOptions>, ConfigureOptions>();
+                services.AddSingleton<IConfigureOptions<MongoDataOptions>, ConfigureMongoDataOptions>();
             }
 
             MongoDataOptions options;

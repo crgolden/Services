@@ -13,7 +13,7 @@
         /// <returns>The <see cref="AmazonEmailOptions"/> configuration section.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="configuration"/> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentException">The <see cref="AmazonEmailOptions"/> configuration section doesn't exist.</exception>
-        public static IConfigurationSection GetQuartzJobStoreOptionsSection(this IConfiguration configuration)
+        public static IConfigurationSection GetAmazonEmailOptionsSection(this IConfiguration configuration)
         {
             if (configuration == default)
             {

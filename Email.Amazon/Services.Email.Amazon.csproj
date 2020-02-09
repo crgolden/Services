@@ -33,7 +33,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.SimpleEmail" Version="3.3.101.99" />
+    <PackageReference Include="AWSSDK.SimpleEmail" Version="3.3.101.101" />
+    <PackageReference Include="Common.Abstractions" Version="1.0.0-beta8" />
     <PackageReference Include="JetBrains.Annotations" Version="2019.1.3" />
     <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.8">
       <PrivateAssets>all</PrivateAssets>
@@ -53,10 +54,6 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\Common\Abstractions\Common.Abstractions.csproj" />
   </ItemGroup>
 
 </Project>

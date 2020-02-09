@@ -1,6 +1,6 @@
-﻿namespace Services.Options
+﻿namespace Services
 {
-    using System.Diagnostics.CodeAnalysis;
+    using System;
     using JetBrains.Annotations;
     using Microsoft.Extensions.Options;
     using MongoDB.Driver;
@@ -9,17 +9,24 @@
     using static MongoDB.Driver.MongoCredential;
     using static MongoDB.Driver.MongoUrl;
 
-    [UsedImplicitly]
-    [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Used implicitly")]
-    internal class ConfigureOptions : IConfigureNamedOptions<MongoDataOptions>
+    /// <inheritdoc />
+    [PublicAPI]
+    public class ConfigureMongoDataOptions : IConfigureNamedOptions<MongoDataOptions>
     {
+        /// <inheritdoc />
         public void Configure(MongoDataOptions options)
         {
             Configure(nameof(MongoDB), options);
         }
 
+        /// <inheritdoc />
         public void Configure(string name, MongoDataOptions options)
         {
+            if (options == default)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
             if (options.MongoClientSettings != default)
             {
                 if (IsNullOrWhiteSpace(options.MongoClientSettings.ApplicationName))

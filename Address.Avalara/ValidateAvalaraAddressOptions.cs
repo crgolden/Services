@@ -1,19 +1,25 @@
-﻿namespace Services.Options
+﻿namespace Services
 {
-    using System.Diagnostics.CodeAnalysis;
+    using System;
     using JetBrains.Annotations;
     using Microsoft.Extensions.Options;
     using static System.String;
     using static Microsoft.Extensions.Options.ValidateOptionsResult;
 
-    [UsedImplicitly]
-    [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Used implicitly")]
-    internal class ValidateOptions : IValidateOptions<AvalaraAddressOptions>
+    /// <inheritdoc />
+    [PublicAPI]
+    public class ValidateAvalaraAddressOptions : IValidateOptions<AvalaraAddressOptions>
     {
+        /// <inheritdoc />
         public ValidateOptionsResult Validate(string name, AvalaraAddressOptions options)
         {
+            if (options == default)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
             return IsNullOrWhiteSpace(options.LicenseKey) ||
-                   IsNullOrWhiteSpace(options.BaseAddress)
+                   options.BaseAddress == default
                 ? Fail($"'{nameof(AvalaraAddressOptions)}' section is invalid")
                 : Success;
         }

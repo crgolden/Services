@@ -1,19 +1,25 @@
-﻿namespace Services.Options
+﻿namespace Services
 {
-    using System.Diagnostics.CodeAnalysis;
+    using System;
     using JetBrains.Annotations;
     using Microsoft.Extensions.Options;
     using static System.String;
     using static Microsoft.Extensions.Options.ValidateOptionsResult;
 
-    [UsedImplicitly]
-    [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Used implicitly")]
-    internal class ValidateOptions : IValidateOptions<AzureStorageOptions>
+    /// <inheritdoc />
+    [PublicAPI]
+    public class ValidateAzureStorageOptions : IValidateOptions<AzureStorageOptions>
     {
+        /// <inheritdoc />
         public ValidateOptionsResult Validate(string name, AzureStorageOptions options)
         {
+            if (options == default)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
             return IsNullOrWhiteSpace(options.AccountName) ||
-            (IsNullOrWhiteSpace(options.AccountKey1) && IsNullOrWhiteSpace(options.AccountKey2))
+                   (IsNullOrWhiteSpace(options.AccountKey1) && IsNullOrWhiteSpace(options.AccountKey2))
                 ? Fail($"'{nameof(AzureStorageOptions)}' section is invalid")
                 : Success;
         }

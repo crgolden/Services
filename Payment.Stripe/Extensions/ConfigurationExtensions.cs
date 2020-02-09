@@ -13,7 +13,7 @@
         /// <returns>The <see cref="StripePaymentOptions"/> configuration section.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="configuration"/> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentException">The <see cref="StripePaymentOptions"/> configuration section doesn't exist.</exception>
-        public static IConfigurationSection GetAzureStorageOptionsSection(this IConfiguration configuration)
+        public static IConfigurationSection GetStripePaymentOptionsSection(this IConfiguration configuration)
         {
             if (configuration == default)
             {
