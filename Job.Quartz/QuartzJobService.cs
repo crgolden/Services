@@ -55,6 +55,7 @@
         public async Task StopAsync(CancellationToken cancellationToken)
         {
             var scheduler = await _schedulerFactory.GetScheduler(cancellationToken).ConfigureAwait(false);
+            scheduler.JobFactory = _jobFactory;
             var jobKeys = _triggersAndJobs.Keys.Select(x => x.Key).ToArray();
             await scheduler.DeleteJobs(jobKeys, cancellationToken).ConfigureAwait(false);
             await scheduler.Shutdown(cancellationToken).ConfigureAwait(false);

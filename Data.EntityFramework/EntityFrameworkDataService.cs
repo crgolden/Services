@@ -90,15 +90,15 @@
         }
 
         /// <inheritdoc />
-        public virtual Task DeleteRangeAsync<T>(IEnumerable<Expression<Func<T, bool>>> expressions, CancellationToken cancellationToken = default)
+        public virtual Task DeleteRangeAsync<T>(IEnumerable<Expression<Func<T, bool>>> predicates, CancellationToken cancellationToken = default)
             where T : class
         {
-            if (expressions == null)
+            if (predicates == null)
             {
-                throw new ArgumentNullException(nameof(expressions));
+                throw new ArgumentNullException(nameof(predicates));
             }
 
-            var query = expressions.Aggregate(Empty<T>().AsQueryable(), (current, next) => current.Union(current.Where(next)));
+            var query = predicates.Aggregate(Empty<T>().AsQueryable(), (current, next) => current.Union(current.Where(next)));
             Context.Set<T>().RemoveRange(query);
             return CompletedTask;
         }
@@ -420,7 +420,7 @@
         }
 
         /// <inheritdoc />
-        public ValueTask<T> GetAsync<T>(object[] keyValues, CancellationToken cancellationToken = default)
+        public virtual ValueTask<T> GetAsync<T>(object[] keyValues, CancellationToken cancellationToken = default)
             where T : class
         {
             if (keyValues == default)

@@ -201,12 +201,12 @@
 
         /// <inheritdoc />
         /// <exception cref="ArgumentException">Collection name not found for <typeparamref name="T"/>.</exception>
-        public virtual Task DeleteRangeAsync<T>(IEnumerable<Expression<Func<T, bool>>> expressions, CancellationToken cancellationToken = default)
+        public virtual Task DeleteRangeAsync<T>(IEnumerable<Expression<Func<T, bool>>> predicates, CancellationToken cancellationToken = default)
             where T : class
         {
-            if (expressions == null)
+            if (predicates == null)
             {
-                throw new ArgumentNullException(nameof(expressions));
+                throw new ArgumentNullException(nameof(predicates));
             }
 
             var type = typeof(T);
@@ -216,7 +216,7 @@
             }
 
             var collection = Database.GetCollection<T>(collectionName, Options.MongoCollectionSettings);
-            var requests = from expression in expressions select new DeleteOneModel<T>(expression);
+            var requests = from expression in predicates select new DeleteOneModel<T>(expression);
             return Options.UseClientSession
                 ? BulkWriteAsync(collection, requests, cancellationToken)
                 : collection.BulkWriteAsync(requests, Options.BulkWriteOptions, cancellationToken);
@@ -648,7 +648,7 @@
         /// or
         /// id member not found for <typeparamref name="T"/>.
         /// </exception>
-        public ValueTask<T> GetAsync<T>(object[] keyValues, CancellationToken cancellationToken = default)
+        public virtual ValueTask<T> GetAsync<T>(object[] keyValues, CancellationToken cancellationToken = default)
             where T : class
         {
             if (keyValues == default)

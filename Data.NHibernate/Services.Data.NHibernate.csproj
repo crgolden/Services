@@ -4,8 +4,8 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Services</RootNamespace>
     <LangVersion>7.3</LangVersion>
-    <PackageId>Services.Db.Teradata</PackageId>
-    <Version>1.0.0-beta4</Version>
+    <PackageId>Services.Data.NHibernate</PackageId>
+    <Version>1.0.0-beta1</Version>
     <Company>crgolden</Company>
     <Authors>Chris Golden</Authors>
     <RepositoryUrl>https://github.com/crgolden/Services</RepositoryUrl>
@@ -14,8 +14,6 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>..\Services.snk</AssemblyOriginatorKeyFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageIcon>deeprog.png</PackageIcon>
     <RepositoryType>git</RepositoryType>
@@ -45,6 +43,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="NHibernate" Version="5.2.7" />
     <PackageReference Include="SonarAnalyzer.CSharp" Version="8.7.0.17535">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -53,7 +52,6 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Teradata.Client.Provider" Version="16.20.9" />
   </ItemGroup>
 
 </Project>

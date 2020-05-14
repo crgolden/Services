@@ -40,7 +40,7 @@
         public Task StartAsync(CancellationToken cancellationToken)
         {
             _receiverClient.RegisterMessageHandler(
-                async (message, token) =>
+                handler: async (message, token) =>
                 {
                     if (!message.UserProperties.ContainsKey("source") || !(message.UserProperties["source"] is string source) ||
                         !message.UserProperties.ContainsKey("destinations") || !(message.UserProperties["destinations"] is IEnumerable<string> destinations) ||
@@ -58,7 +58,7 @@
                         cancellationToken: token).ConfigureAwait(false);
                     await _receiverClient.CompleteAsync(message.SystemProperties.LockToken).ConfigureAwait(false);
                 },
-                args =>
+                exceptionReceivedHandler: args =>
                 {
                     _logger.LogError(
                         eventId: new EventId(1, nameof(Exception)),
