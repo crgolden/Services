@@ -72,6 +72,8 @@
             // Assert
             var result = Assert.Single(response);
             Assert.Equal(addressResolution.ValidatedAddresses[0].Country, result?.Country);
+            messageHandler.Dispose();
+            httpClient.Dispose();
         }
     }
 }

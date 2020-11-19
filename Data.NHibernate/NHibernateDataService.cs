@@ -51,7 +51,7 @@
         public virtual async Task<T> CreateAsync<T>(T record, CancellationToken cancellationToken = default)
             where T : class
         {
-            if (Options.UseTransaction && !Session.Transaction.IsActive)
+            if (Options.UseTransaction && Session.GetCurrentTransaction()?.IsActive != true)
             {
                 Session.BeginTransaction();
             }
@@ -64,7 +64,7 @@
         public virtual async Task<IEnumerable<T>> CreateRangeAsync<T>(IEnumerable<T> records, CancellationToken cancellationToken = default)
             where T : class
         {
-            if (Options.UseTransaction && !Session.Transaction.IsActive)
+            if (Options.UseTransaction && Session.GetCurrentTransaction()?.IsActive != true)
             {
                 Session.BeginTransaction();
             }
@@ -82,7 +82,7 @@
         public virtual async Task DeleteAsync<T>(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
             where T : class
         {
-            if (Options.UseTransaction && !Session.Transaction.IsActive)
+            if (Options.UseTransaction && Session.GetCurrentTransaction()?.IsActive != true)
             {
                 Session.BeginTransaction();
             }
@@ -105,9 +105,9 @@
                 throw new ArgumentNullException(nameof(predicates));
             }
 
-            async Task DeleteRangeAsync()
+            async Task DeleteRange()
             {
-                if (Options.UseTransaction && !Session.Transaction.IsActive)
+                if (Options.UseTransaction && Session.GetCurrentTransaction()?.IsActive != true)
                 {
                     Session.BeginTransaction();
                 }
@@ -124,25 +124,26 @@
                 }
             }
 
-            return DeleteRangeAsync();
+            return DeleteRange();
         }
 
         /// <inheritdoc />
         public virtual async Task SaveChangesAsync(CancellationToken cancellationToken = default)
         {
-            if (!Options.UseTransaction || !Session.Transaction.IsActive)
+            var transaction = Session.GetCurrentTransaction();
+            if (!Options.UseTransaction || transaction == default || !transaction.IsActive)
             {
                 return;
             }
 
             try
             {
-                await Session.Transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
-                Session.Transaction.Dispose();
+                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+                transaction.Dispose();
             }
             catch (Exception)
             {
-                await Session.Transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+                await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
                 throw;
             }
         }
@@ -151,7 +152,7 @@
         public virtual Task UpdateAsync<T>(Expression<Func<T, bool>> predicate, T record, CancellationToken cancellationToken = default)
             where T : class
         {
-            if (Options.UseTransaction && !Session.Transaction.IsActive)
+            if (Options.UseTransaction && Session.GetCurrentTransaction()?.IsActive != true)
             {
                 Session.BeginTransaction();
             }
@@ -168,9 +169,9 @@
                 throw new ArgumentNullException(nameof(keyValuePairs));
             }
 
-            async Task UpdateRangeAsync()
+            async Task UpdateRange()
             {
-                if (Options.UseTransaction && !Session.Transaction.IsActive)
+                if (Options.UseTransaction && Session.GetCurrentTransaction()?.IsActive != true)
                 {
                     Session.BeginTransaction();
                 }
@@ -187,7 +188,7 @@
                 }
             }
 
-            return UpdateRangeAsync();
+            return UpdateRange();
         }
 
         /// <inheritdoc />
@@ -306,13 +307,13 @@
                 throw new ArgumentNullException(nameof(source));
             }
 
-            async Task ForEachAsync()
+            async Task ForEach()
             {
                 var records = await source.ToListAsync(cancellationToken).ConfigureAwait(false);
                 records.ForEach(action);
             }
 
-            return ForEachAsync();
+            return ForEach();
         }
 
         /// <inheritdoc />

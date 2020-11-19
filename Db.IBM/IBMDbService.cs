@@ -28,12 +28,6 @@
         /// <inheritdoc cref="IDbService" />
         public override bool CanCreateDataSourceEnumerator => true;
 
-        /// <inheritdoc />
-        public bool CanCreateDataAdapter => true;
-
-        /// <inheritdoc />
-        public bool CanCreateCommandBuilder => true;
-
         /// <inheritdoc cref="IDbService" />
         public override DbCommand CreateCommand() => new DB2Command();
 

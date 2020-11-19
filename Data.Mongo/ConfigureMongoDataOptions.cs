@@ -63,7 +63,6 @@
                         ConnectionMode = options.MongoClientSettings.ConnectionMode,
                         DatabaseName = options.DatabaseName,
                         FSync = options.MongoClientSettings.WriteConcern?.FSync,
-                        GuidRepresentation = options.MongoClientSettings.GuidRepresentation,
                         HeartbeatInterval = options.MongoClientSettings.HeartbeatInterval,
                         HeartbeatTimeout = options.MongoClientSettings.HeartbeatTimeout,
                         IPv6 = options.MongoClientSettings.IPv6,

@@ -13,6 +13,6 @@
 
         /// <summary>Gets or sets the size of the pool.</summary>
         /// <value>The size of the pool.</value>
-        public int? PoolSize { get; set; }
+        public int? PoolSize { get; set; } = 128;
     }
 }

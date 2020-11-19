@@ -30,21 +30,15 @@
                 throw new ArgumentNullException(nameof(customerId));
             }
 
-            async Task<string> GetCustomerAsync()
+            async Task<string> GetCustomer()
             {
                 var customerService = new CustomerService(_stripeClient);
-                var customerGetOptions = new CustomerGetOptions();
-                var customer = await customerService
-                    .GetAsync(
-                        customerId: customerId,
-                        options: customerGetOptions,
-                        requestOptions: default,
-                        cancellationToken: cancellationToken)
-                    .ConfigureAwait(false);
+                var options = new CustomerGetOptions();
+                var customer = await customerService.GetAsync(customerId, options, default, cancellationToken).ConfigureAwait(false);
                 return customer.Id;
             }
 
-            return GetCustomerAsync();
+            return GetCustomer();
         }
 
         /// <inheritdoc />
@@ -60,24 +54,19 @@
                 throw new ArgumentNullException(nameof(tokenId));
             }
 
-            async Task<string> CreateCustomerAsync()
+            async Task<string> CreateCustomer()
             {
                 var customerService = new CustomerService(_stripeClient);
-                var customerCreateOptions = new CustomerCreateOptions
+                var options = new CustomerCreateOptions
                 {
                     Email = email,
                     Source = tokenId
                 };
-                var customer = await customerService
-                    .CreateAsync(
-                        options: customerCreateOptions,
-                        requestOptions: default,
-                        cancellationToken: cancellationToken)
-                    .ConfigureAwait(false);
+                var customer = await customerService.CreateAsync(options, default, cancellationToken).ConfigureAwait(false);
                 return customer.Id;
             }
 
-            return CreateCustomerAsync();
+            return CreateCustomer();
         }
 
         /// <inheritdoc />
@@ -98,10 +87,10 @@
                 throw new ArgumentNullException(nameof(currency));
             }
 
-            async Task<string> AuthorizeAsync()
+            async Task<string> Authorize()
             {
                 var chargeService = new ChargeService(_stripeClient);
-                var chargeCreateOptions = new ChargeCreateOptions
+                var options = new ChargeCreateOptions
                 {
                     Amount = (long?)amount * 100,
                     Currency = currency,
@@ -109,16 +98,11 @@
                     Customer = customerId,
                     Capture = false
                 };
-                var charge = await chargeService
-                    .CreateAsync(
-                        options: chargeCreateOptions,
-                        requestOptions: default,
-                        cancellationToken: cancellationToken)
-                    .ConfigureAwait(false);
+                var charge = await chargeService.CreateAsync(options, default, cancellationToken).ConfigureAwait(false);
                 return charge.Id;
             }
 
-            return AuthorizeAsync();
+            return Authorize();
         }
 
         /// <inheritdoc />
@@ -139,10 +123,10 @@
                 throw new ArgumentNullException(nameof(currency));
             }
 
-            async Task<string> CaptureAsync()
+            async Task<string> Capture()
             {
                 var chargeService = new ChargeService(_stripeClient);
-                var chargeCreateOptions = new ChargeCreateOptions
+                var options = new ChargeCreateOptions
                 {
                     Amount = (long?)amount * 100,
                     Currency = currency,
@@ -150,16 +134,11 @@
                     Customer = customerId,
                     Capture = true
                 };
-                var charge = await chargeService
-                    .CreateAsync(
-                        options: chargeCreateOptions,
-                        requestOptions: default,
-                        cancellationToken: cancellationToken)
-                    .ConfigureAwait(false);
+                var charge = await chargeService.CreateAsync(options, default, cancellationToken).ConfigureAwait(false);
                 return charge.Id;
             }
 
-            return CaptureAsync();
+            return Capture();
         }
 
         /// <inheritdoc />
@@ -173,16 +152,12 @@
                 throw new ArgumentNullException(nameof(chargeId));
             }
 
-            var chargeUpdateOptions = new ChargeUpdateOptions
+            var options = new ChargeUpdateOptions
             {
                 Description = description
             };
             var chargeService = new ChargeService(_stripeClient);
-            return chargeService.UpdateAsync(
-                chargeId: chargeId,
-                options: chargeUpdateOptions,
-                requestOptions: default,
-                cancellationToken: cancellationToken);
+            return chargeService.UpdateAsync(chargeId, options, default, cancellationToken);
         }
     }
 }

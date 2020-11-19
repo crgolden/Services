@@ -62,7 +62,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Services.Data.EntityFramewo
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Services.Data.Mongo.Tests", "Data.Mongo.Tests\Services.Data.Mongo.Tests.csproj", "{87C95F29-1037-4399-87C4-DCA49AA45999}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Services.Data.NHibernate", "Data.NHibernate\Services.Data.NHibernate.csproj", "{64F9EDAA-F63F-4833-876A-333FC50CC3A0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Services.Data.NHibernate", "Data.NHibernate\Services.Data.NHibernate.csproj", "{64F9EDAA-F63F-4833-876A-333FC50CC3A0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -184,8 +184,8 @@ Global
 		{D29F8F0D-28DA-402A-A5EC-61AB9DC73957}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D29F8F0D-28DA-402A-A5EC-61AB9DC73957}.Release|x64.ActiveCfg = Release|Any CPU
 		{D29F8F0D-28DA-402A-A5EC-61AB9DC73957}.Release|x64.Build.0 = Release|Any CPU
-		{E48D2E8D-2323-467C-9505-BC94A4802842}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E48D2E8D-2323-467C-9505-BC94A4802842}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E48D2E8D-2323-467C-9505-BC94A4802842}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{E48D2E8D-2323-467C-9505-BC94A4802842}.Debug|Any CPU.Build.0 = Debug|x64
 		{E48D2E8D-2323-467C-9505-BC94A4802842}.Debug|x64.ActiveCfg = Debug|Any CPU
 		{E48D2E8D-2323-467C-9505-BC94A4802842}.Debug|x64.Build.0 = Debug|Any CPU
 		{E48D2E8D-2323-467C-9505-BC94A4802842}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -208,8 +208,8 @@ Global
 		{CC86A881-60D7-4A77-9CA4-0378201670DB}.Release|Any CPU.Build.0 = Release|Any CPU
 		{CC86A881-60D7-4A77-9CA4-0378201670DB}.Release|x64.ActiveCfg = Release|Any CPU
 		{CC86A881-60D7-4A77-9CA4-0378201670DB}.Release|x64.Build.0 = Release|Any CPU
-		{D9351A0D-23E4-47BE-8B36-55246E56200D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D9351A0D-23E4-47BE-8B36-55246E56200D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D9351A0D-23E4-47BE-8B36-55246E56200D}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{D9351A0D-23E4-47BE-8B36-55246E56200D}.Debug|Any CPU.Build.0 = Debug|x64
 		{D9351A0D-23E4-47BE-8B36-55246E56200D}.Debug|x64.ActiveCfg = Debug|Any CPU
 		{D9351A0D-23E4-47BE-8B36-55246E56200D}.Debug|x64.Build.0 = Debug|Any CPU
 		{D9351A0D-23E4-47BE-8B36-55246E56200D}.Release|Any CPU.ActiveCfg = Release|Any CPU
