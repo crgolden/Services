@@ -1,11 +1,10 @@
 ﻿namespace Microsoft.Extensions.DependencyInjection
 {
     using System;
-    using Azure.Storage;
-    using Azure.Storage.Auth;
-    using Azure.Storage.Blob;
-    using Common;
+    using Common.Services;
     using Configuration;
+    using global::Azure.Storage;
+    using global::Azure.Storage.Blobs;
     using JetBrains.Annotations;
     using Options;
     using Services;
@@ -37,11 +36,9 @@
 
             services.AddSingleton<IValidateOptions<AzureStorageOptions>, ValidateAzureStorageOptions>();
             services.Configure(configureOptions);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<AzureStorageOptions>>().Value;
-                return services.AddAzureStorageService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<AzureStorageOptions>>().Value;
+            return services.AddAzureStorageService(options);
         }
 
         /// <summary>Adds a scoped <see cref="AzureStorageService"/> using the provided <paramref name="config"/>.</summary>
@@ -67,11 +64,9 @@
 
             services.AddSingleton<IValidateOptions<AzureStorageOptions>, ValidateAzureStorageOptions>();
             services.Configure<AzureStorageOptions>(config);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<AzureStorageOptions>>().Value;
-                return services.AddAzureStorageService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<AzureStorageOptions>>().Value;
+            return services.AddAzureStorageService(options);
         }
 
         /// <summary>Adds a scoped <see cref="AzureStorageService"/> using the provided <paramref name="config"/> and <paramref name="configureBinder"/>.</summary>
@@ -106,24 +101,18 @@
 
             services.AddSingleton<IValidateOptions<AzureStorageOptions>, ValidateAzureStorageOptions>();
             services.Configure<AzureStorageOptions>(config, configureBinder);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<AzureStorageOptions>>().Value;
-                return services.AddAzureStorageService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<AzureStorageOptions>>().Value;
+            return services.AddAzureStorageService(options);
         }
 
         private static IServiceCollection AddAzureStorageService(this IServiceCollection services, AzureStorageOptions options)
         {
             services.AddSingleton(_ =>
             {
-                var storageCredentials = new StorageCredentials(
-                    accountName: options.AccountName,
-                    keyValue: options.AccountKey1 ?? options.AccountKey2);
-                var storageAccount = new CloudStorageAccount(
-                    storageCredentials: storageCredentials,
-                    useHttps: true);
-                return storageAccount.CreateCloudBlobClient();
+                var credential = new StorageSharedKeyCredential(options.AccountName, options.AccountKey1 ?? options.AccountKey2);
+                var serviceUri = new Uri($"https://{options.AccountName}.blob.core.windows.net");
+                return new BlobServiceClient(serviceUri, credential);
             });
             services.AddSingleton<IStorageService, AzureStorageService>();
             return services;

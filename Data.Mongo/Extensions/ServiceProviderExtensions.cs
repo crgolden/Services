@@ -1,7 +1,7 @@
 ﻿namespace System
 {
     using Collections.Generic;
-    using Common;
+    using Common.Services;
     using JetBrains.Annotations;
     using Linq;
     using Microsoft.Extensions.DependencyInjection;
@@ -32,7 +32,7 @@
         public static Task<IServiceProvider> InitializeCollectionsAsync(
             this IServiceProvider provider,
             IDictionary<string, BsonClassMap> keyValuePairs,
-            string name = nameof(MongoDB),
+            string name = nameof(MongoDataService),
             CancellationToken cancellationToken = default)
         {
             if (provider == default)
@@ -40,7 +40,7 @@
                 throw new ArgumentNullException(nameof(provider));
             }
 
-            if (keyValuePairs == null)
+            if (keyValuePairs == default)
             {
                 throw new ArgumentNullException(nameof(keyValuePairs));
             }
@@ -80,18 +80,18 @@
             var client = clients[name];
             var database = client.GetDatabase(options.DatabaseName, options.DatabaseSettings);
 
-            async Task<IServiceProvider> InitializeCollectionsAsync()
+            async Task<IServiceProvider> InitializeCollections()
             {
                 var cursor = await database.ListCollectionNamesAsync(options.ListCollectionNamesOptions, cancellationToken).ConfigureAwait(false);
                 var collectionNames = await cursor.ToListAsync(cancellationToken).ConfigureAwait(false);
                 var tasks = options.CollectionNames.Values
-                    .Where(x => !IsNullOrWhiteSpace(x) && collectionNames.All(y => y != x))
+                    .Where(x => !IsNullOrWhiteSpace(x) && collectionNames.All(y => !string.Equals(y, x, Ordinal)))
                     .Select(x => database.CreateCollectionAsync(x, options.CreateCollectionOptions, cancellationToken));
                 await WhenAll(tasks).ConfigureAwait(false);
                 return provider;
             }
 
-            return InitializeCollectionsAsync();
+            return InitializeCollections();
         }
 
         /// <summary>Builds the indexes specified in <paramref name="indexModels"/>.</summary>
@@ -108,7 +108,7 @@
         public static Task<IServiceProvider> BuildIndexesAsync<TDocument>(
             this IServiceProvider provider,
             IEnumerable<CreateIndexModel<TDocument>> indexModels,
-            string name = nameof(MongoDB),
+            string name = nameof(MongoDataService),
             CancellationToken cancellationToken = default)
         {
             if (provider == default)
@@ -116,7 +116,7 @@
                 throw new ArgumentNullException(nameof(provider));
             }
 
-            if (indexModels == null)
+            if (indexModels == default)
             {
                 throw new ArgumentNullException(nameof(indexModels));
             }
@@ -141,7 +141,7 @@
                 throw new ArgumentException(CollectionNameNotFound(type.Name));
             }
 
-            async Task<IServiceProvider> BuildIndexesAsync()
+            async Task<IServiceProvider> BuildIndexes()
             {
                 await client
                     .GetDatabase(options.DatabaseName, options.DatabaseSettings)
@@ -150,7 +150,7 @@
                 return provider;
             }
 
-            return BuildIndexesAsync();
+            return BuildIndexes();
         }
 
         /// <summary>If the <see cref="IMongoCollection{TDocument}"/> is empty, inserts the <paramref name="documents"/> using the <see cref="IMongoClient"/> identified by <paramref name="name"/>.</summary>
@@ -167,7 +167,7 @@
         public static Task<IServiceProvider> SeedDocumentsAsync<TDocument>(
             this IServiceProvider provider,
             IEnumerable<TDocument> documents,
-            string name = nameof(MongoDB),
+            string name = nameof(MongoDataService),
             CancellationToken cancellationToken = default)
             where TDocument : class
         {
@@ -176,7 +176,7 @@
                 throw new ArgumentNullException(nameof(provider));
             }
 
-            if (documents == null)
+            if (documents == default)
             {
                 throw new ArgumentNullException(nameof(documents));
             }

@@ -71,11 +71,9 @@
 
             services.AddSingleton<IValidateOptions<QuartzJobStoreOptions>, ValidateQuartzJobStoreOptions>();
             services.Configure(configureOptions);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<QuartzJobStoreOptions>>().Value;
-                return services.AddQuartzJobService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<QuartzJobStoreOptions>>().Value;
+            return services.AddQuartzJobService(options);
         }
 
         /// <summary>Adds a hosted <see cref="QuartzJobService"/> using the provided <paramref name="config"/>.</summary>
@@ -101,11 +99,9 @@
 
             services.AddSingleton<IValidateOptions<QuartzJobStoreOptions>, ValidateQuartzJobStoreOptions>();
             services.Configure<QuartzJobStoreOptions>(config);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<QuartzJobStoreOptions>>().Value;
-                return services.AddQuartzJobService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<QuartzJobStoreOptions>>().Value;
+            return services.AddQuartzJobService(options);
         }
 
         /// <summary>Adds a hosted <see cref="QuartzJobService"/> using the provided <paramref name="config"/> and <paramref name="configureBinder"/>.</summary>
@@ -140,11 +136,9 @@
 
             services.AddSingleton<IValidateOptions<QuartzJobStoreOptions>, ValidateQuartzJobStoreOptions>();
             services.Configure<QuartzJobStoreOptions>(config, configureBinder);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<QuartzJobStoreOptions>>().Value;
-                return services.AddQuartzJobService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<QuartzJobStoreOptions>>().Value;
+            return services.AddQuartzJobService(options);
         }
 
         private static IServiceCollection AddQuartzJobService(this IServiceCollection services, QuartzJobStoreOptions options)
@@ -154,7 +148,7 @@
                 .Where(x => x.IsSubclassOf(typeof(QuartzJobDetail)) && !x.IsAbstract))
             {
                 var job = CreateInstance(type);
-                services.AddSingleton(job as IJob);
+                services.AddSingleton((job as IJob)!);
             }
 
             var schedulerFactory = new StdSchedulerFactory();

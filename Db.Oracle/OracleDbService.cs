@@ -2,7 +2,7 @@
 {
     using System;
     using System.Data.Common;
-    using Common;
+    using Common.Services;
     using JetBrains.Annotations;
     using Oracle.ManagedDataAccess.Client;
 
@@ -25,12 +25,6 @@
 
         /// <inheritdoc cref="IDbService" />
         public override bool CanCreateDataSourceEnumerator => true;
-
-        /// <inheritdoc />
-        public bool CanCreateDataAdapter => true;
-
-        /// <inheritdoc />
-        public bool CanCreateCommandBuilder => true;
 
         /// <inheritdoc cref="IDbService" />
         public override DbCommand CreateCommand() => new OracleCommand();

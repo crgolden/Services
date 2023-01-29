@@ -3,7 +3,7 @@
     using System;
     using System.Data.Common;
     using System.Diagnostics.CodeAnalysis;
-    using Common;
+    using Common.Services;
     using IBM.Data.DB2.Core;
     using JetBrains.Annotations;
 

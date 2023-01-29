@@ -2,30 +2,42 @@
 {
     using System;
     using System.IO;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Common;
+    using Azure.Storage.Blobs;
+    using Common.Services;
     using JetBrains.Annotations;
-    using Microsoft.Azure.Storage.Blob;
     using static System.DateTime;
     using static System.String;
-    using static System.Threading.Tasks.Task;
-    using static Microsoft.Azure.Storage.Blob.SharedAccessBlobPermissions;
+    using static Azure.Storage.Sas.BlobSasPermissions;
 
     /// <inheritdoc />
     [PublicAPI]
     public class AzureStorageService : IStorageService
     {
-        private readonly CloudBlobClient _cloudBlobClient;
+        private readonly BlobServiceClient _cloudBlobClient;
 
         /// <summary>Initializes a new instance of the <see cref="AzureStorageService"/> class.</summary>
-        /// <param name="cloudBlobClient">The <see cref="CloudBlobClient"/>.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="cloudBlobClient" /> is <see langword="null" />.</exception>
-        public AzureStorageService(CloudBlobClient cloudBlobClient)
+        /// <param name="blobServiceClient">The <see cref="BlobServiceClient"/>.</param>
+        /// <param name="name">The name.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="blobServiceClient" /> is <see langword="null" />
+        /// or
+        /// <paramref name="name" /> is <see langword="null" />.</exception>
+        public AzureStorageService(
+            BlobServiceClient blobServiceClient,
+            string name = nameof(AzureStorageService))
         {
-            _cloudBlobClient = cloudBlobClient ?? throw new ArgumentNullException(nameof(cloudBlobClient));
+            if (IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
+            _cloudBlobClient = blobServiceClient ?? throw new ArgumentNullException(nameof(blobServiceClient));
+            Name = name;
         }
+
+        /// <inheritdoc />
+        public string Name { get; }
 
         /// <inheritdoc />
         public Task<Uri> Upload(Stream stream, string fileName, string folderName, CancellationToken cancellationToken = default)
@@ -45,43 +57,24 @@
                 throw new ArgumentNullException(nameof(folderName));
             }
 
-            async Task<Uri> Upload()
+            async Task<Uri> UploadAsync()
             {
                 var blob = _cloudBlobClient
-                    .GetContainerReference(folderName)
-                    .GetBlockBlobReference(fileName);
+                    .GetBlobContainerClient(folderName)
+                    .GetBlobClient(fileName);
                 await blob
-                    .UploadFromStreamAsync(stream, cancellationToken)
+                    .UploadAsync(stream, cancellationToken)
                     .ConfigureAwait(false);
                 return blob.Uri;
             }
 
-            return Upload();
+            return UploadAsync();
         }
 
         /// <inheritdoc />
         public Task Delete(string fileName, string folderName, CancellationToken cancellationToken = default)
         {
-            if (IsNullOrWhiteSpace(fileName))
-            {
-                throw new ArgumentNullException(nameof(fileName));
-            }
-
-            if (IsNullOrWhiteSpace(folderName))
-            {
-                throw new ArgumentNullException(nameof(folderName));
-            }
-
-            async Task Delete()
-            {
-                var blob = await _cloudBlobClient
-                    .GetContainerReference(folderName)
-                    .GetBlobReferenceFromServerAsync(fileName, cancellationToken)
-                    .ConfigureAwait(false);
-                await blob.DeleteIfExistsAsync(cancellationToken).ConfigureAwait(false);
-            }
-
-            return Delete();
+            return DeleteAll(folderName, cancellationToken);
         }
 
         /// <inheritdoc />
@@ -92,15 +85,23 @@
                 throw new ArgumentNullException(folderName);
             }
 
-            return WhenAll(_cloudBlobClient
-                .GetContainerReference(folderName)
-                .ListBlobs(null, true)
-                .OfType<CloudBlob>()
-                .Select(x => x.DeleteIfExistsAsync(cancellationToken)));
+            var blobContainerClient = _cloudBlobClient.GetBlobContainerClient(folderName);
+            var blobItems = blobContainerClient.GetBlobsAsync(prefix: folderName, cancellationToken: cancellationToken);
+
+            async Task DeleteAllAsync()
+            {
+                await foreach (var blobItem in blobItems)
+                {
+                    var blobClient = blobContainerClient.GetBlobClient(blobItem.Name);
+                    await blobClient.DeleteIfExistsAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+                }
+            }
+
+            return DeleteAllAsync();
         }
 
         /// <inheritdoc />
-        public Uri GetUrl(string fileName, string folderName, DateTime expiration)
+        public Uri GetUrl(string fileName, string folderName, DateTimeOffset expiration)
         {
             if (IsNullOrWhiteSpace(fileName))
             {
@@ -117,17 +118,10 @@
                 throw new ArgumentException("Invalid expiration", nameof(expiration));
             }
 
-            var policy = new SharedAccessBlobPolicy
-            {
-                SharedAccessStartTime = UtcNow.AddMinutes(-5),
-                SharedAccessExpiryTime = expiration,
-                Permissions = Read
-            };
-            var blob = _cloudBlobClient
-                .GetContainerReference(folderName)
-                .GetBlockBlobReference(fileName);
-            var sharedAccessSignature = blob.GetSharedAccessSignature(policy);
-            return new Uri(sharedAccessSignature);
+            var blobClient = _cloudBlobClient
+                .GetBlobContainerClient(folderName)
+                .GetBlobClient(fileName);
+            return blobClient.GenerateSasUri(Read, UtcNow.AddHours(1));
         }
     }
 }

@@ -34,11 +34,9 @@
 
             services.AddSingleton<IValidateOptions<OracleDbOptions>, ValidateOracleDbOptions>();
             services.Configure(configureOptions);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<OracleDbOptions>>().Value;
-                return services.AddOracleDbService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<OracleDbOptions>>().Value;
+            return AddOracleDbService(services, options);
         }
 
         /// <summary>Adds a scoped <see cref="OracleDbService"/> using the provided <paramref name="config"/>.</summary>
@@ -64,11 +62,9 @@
 
             services.AddSingleton<IValidateOptions<OracleDbOptions>, ValidateOracleDbOptions>();
             services.Configure<OracleDbOptions>(config);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<OracleDbOptions>>().Value;
-                return services.AddOracleDbService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<OracleDbOptions>>().Value;
+            return services.AddOracleDbService(options);
         }
 
         /// <summary>Adds a scoped <see cref="OracleDbService"/> using the provided <paramref name="config"/> and <paramref name="configureBinder"/>.</summary>
@@ -103,11 +99,9 @@
 
             services.AddSingleton<IValidateOptions<OracleDbOptions>, ValidateOracleDbOptions>();
             services.Configure<OracleDbOptions>(config, configureBinder);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<OracleDbOptions>>().Value;
-                return services.AddOracleDbService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<OracleDbOptions>>().Value;
+            return services.AddOracleDbService(options);
         }
 
         private static IServiceCollection AddOracleDbService(this IServiceCollection services, OracleDbOptions options)

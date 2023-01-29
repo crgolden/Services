@@ -3,7 +3,7 @@
     using System;
     using System.Data.Common;
     using System.Data.SqlClient;
-    using Common;
+    using Common.Services;
     using JetBrains.Annotations;
 
     /// <inheritdoc cref="IDbService" />

@@ -6,7 +6,7 @@
     using System.Linq.Expressions;
     using System.Threading;
     using System.Threading.Tasks;
-    using Common;
+    using Common.Services;
     using JetBrains.Annotations;
     using MongoDB.Driver;
     using MongoDB.Driver.Linq;
@@ -27,8 +27,13 @@
         /// <param name="mongoClient">The <see cref="IMongoClient"/>.</param>
         /// <param name="mongoDataOptions">The <see cref="MongoDataOptions"/>.</param>
         /// <param name="name">The name (default is "MongoDB").</param>
-        /// <exception cref="ArgumentNullException"><paramref name="mongoClient"/> is <see langword="null" /> or <paramref name="mongoDataOptions"/> is <see langword="null" /> or <paramref name="name"/> is <see langword="null" />.</exception>
-        public MongoDataService(IMongoClient mongoClient, MongoDataOptions mongoDataOptions, string name = nameof(MongoDB))
+        /// <exception cref="ArgumentNullException"><paramref name="mongoClient"/> is <see langword="null" />
+        /// or
+        /// <paramref name="mongoDataOptions"/> is <see langword="null" /> or <paramref name="name"/> is <see langword="null" />.</exception>
+        public MongoDataService(
+            IMongoClient mongoClient,
+            MongoDataOptions mongoDataOptions,
+            string name = nameof(MongoDataService))
         {
             if (IsNullOrWhiteSpace(name))
             {
@@ -79,23 +84,19 @@
             var collection = Database.GetCollection<T>(collectionName);
             if (!Options.UseClientSession)
             {
-                async Task<T> CreateAsync()
+                async Task<T> Create()
                 {
                     await collection.InsertOneAsync(record, Options.InsertOneOptions, cancellationToken).ConfigureAwait(false);
                     return record;
                 }
 
-                return CreateAsync();
+                return Create();
             }
             else
             {
-                async Task<T> CreateAsync()
+                async Task<T> Create()
                 {
-                    if (Session == default)
-                    {
-                        Session = await Client.StartSessionAsync(Options.ClientSessionOptions, cancellationToken).ConfigureAwait(false);
-                    }
-
+                    Session ??= await Client.StartSessionAsync(Options.ClientSessionOptions, cancellationToken).ConfigureAwait(false);
                     if (!Session.IsInTransaction)
                     {
                         Session.StartTransaction(Options.TransactionOptions);
@@ -105,7 +106,7 @@
                     return record;
                 }
 
-                return CreateAsync();
+                return Create();
             }
         }
 
@@ -114,7 +115,7 @@
         public virtual Task<IEnumerable<T>> CreateRangeAsync<T>(IEnumerable<T> records, CancellationToken cancellationToken = default)
             where T : class
         {
-            if (records == null)
+            if (records == default)
             {
                 throw new ArgumentNullException(nameof(records));
             }
@@ -129,23 +130,19 @@
             var collection = Database.GetCollection<T>(collectionName);
             if (!Options.UseClientSession)
             {
-                async Task<IEnumerable<T>> CreateRangeAsync()
+                async Task<IEnumerable<T>> CreateRange()
                 {
                     await collection.InsertManyAsync(enumerated, Options.InsertManyOptions, cancellationToken).ConfigureAwait(false);
                     return enumerated;
                 }
 
-                return CreateRangeAsync();
+                return CreateRange();
             }
             else
             {
-                async Task<IEnumerable<T>> CreateRangeAsync()
+                async Task<IEnumerable<T>> CreateRange()
                 {
-                    if (Session == default)
-                    {
-                        Session = await Client.StartSessionAsync(Options.ClientSessionOptions, cancellationToken).ConfigureAwait(false);
-                    }
-
+                    Session ??= await Client.StartSessionAsync(Options.ClientSessionOptions, cancellationToken).ConfigureAwait(false);
                     if (!Session.IsInTransaction)
                     {
                         Session.StartTransaction(Options.TransactionOptions);
@@ -155,7 +152,7 @@
                     return enumerated;
                 }
 
-                return CreateRangeAsync();
+                return CreateRange();
             }
         }
 
@@ -181,13 +178,9 @@
                 return collection.DeleteOneAsync(predicate, Options.DeleteOptions, cancellationToken);
             }
 
-            async Task DeleteAsync()
+            async Task Delete()
             {
-                if (Session == default)
-                {
-                    Session = await Client.StartSessionAsync(Options.ClientSessionOptions, cancellationToken).ConfigureAwait(false);
-                }
-
+                Session ??= await Client.StartSessionAsync(Options.ClientSessionOptions, cancellationToken).ConfigureAwait(false);
                 if (!Session.IsInTransaction)
                 {
                     Session.StartTransaction(Options.TransactionOptions);
@@ -196,7 +189,7 @@
                 await collection.DeleteOneAsync(Session, predicate, Options.DeleteOptions, cancellationToken).ConfigureAwait(false);
             }
 
-            return DeleteAsync();
+            return Delete();
         }
 
         /// <inheritdoc />
@@ -204,7 +197,7 @@
         public virtual Task DeleteRangeAsync<T>(IEnumerable<Expression<Func<T, bool>>> predicates, CancellationToken cancellationToken = default)
             where T : class
         {
-            if (predicates == null)
+            if (predicates == default)
             {
                 throw new ArgumentNullException(nameof(predicates));
             }
@@ -268,13 +261,9 @@
                 return collection.ReplaceOneAsync(predicate, record, Options.ReplaceOptions, cancellationToken);
             }
 
-            async Task UpdateAsync()
+            async Task Update()
             {
-                if (Session == default)
-                {
-                    Session = await Client.StartSessionAsync(Options.ClientSessionOptions, cancellationToken).ConfigureAwait(false);
-                }
-
+                Session ??= await Client.StartSessionAsync(Options.ClientSessionOptions, cancellationToken).ConfigureAwait(false);
                 if (!Session.IsInTransaction)
                 {
                     Session.StartTransaction(Options.TransactionOptions);
@@ -283,7 +272,7 @@
                 await collection.ReplaceOneAsync(Session, predicate, record, Options.ReplaceOptions, cancellationToken).ConfigureAwait(false);
             }
 
-            return UpdateAsync();
+            return Update();
         }
 
         /// <inheritdoc />
@@ -304,7 +293,7 @@
 
             var collection = Database.GetCollection<T>(collectionName, Options.MongoCollectionSettings);
             var requests = from keyValuePair in keyValuePairs
-                where keyValuePair.Key != default && keyValuePair.Value != null
+                where keyValuePair is { Key: { }, Value: { } }
                 select new ReplaceOneModel<T>(keyValuePair.Key, keyValuePair.Value);
             return Options.UseClientSession
                 ? BulkWriteAsync(collection, requests, cancellationToken)
@@ -679,7 +668,7 @@
                 throw new InvalidOperationException($"Id member not found for '{type.Name}'");
             }
 
-            async ValueTask<T> GetAsync()
+            async ValueTask<T> Get()
             {
                 var cursor = await Database
                     .GetCollection<T>(collectionName, Options.MongoCollectionSettings)
@@ -687,7 +676,7 @@
                 return await cursor.SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
             }
 
-            return GetAsync();
+            return Get();
         }
 
         /// <inheritdoc />
@@ -1095,13 +1084,9 @@
                 throw new ArgumentNullException(nameof(collection));
             }
 
-            async Task BulkWriteAsync()
+            async Task BulkWrite()
             {
-                if (Session == default)
-                {
-                    Session = await Client.StartSessionAsync(Options.ClientSessionOptions, cancellationToken).ConfigureAwait(false);
-                }
-
+                Session ??= await Client.StartSessionAsync(Options.ClientSessionOptions, cancellationToken).ConfigureAwait(false);
                 if (!Session.IsInTransaction)
                 {
                     Session.StartTransaction(Options.TransactionOptions);
@@ -1110,7 +1095,7 @@
                 await collection.BulkWriteAsync(Session, requests, Options.BulkWriteOptions, cancellationToken).ConfigureAwait(false);
             }
 
-            return BulkWriteAsync();
+            return BulkWrite();
         }
     }
 }

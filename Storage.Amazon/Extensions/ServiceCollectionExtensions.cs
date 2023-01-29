@@ -2,7 +2,7 @@
 {
     using System;
     using Amazon.S3;
-    using Common;
+    using Common.Services;
     using Configuration;
     using JetBrains.Annotations;
     using Options;
@@ -35,11 +35,9 @@
 
             services.AddSingleton<IValidateOptions<AmazonStorageOptions>, ValidateAmazonStorageOptions>();
             services.Configure(configureOptions);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<AmazonStorageOptions>>().Value;
-                return services.AddAmazonStorageService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<AmazonStorageOptions>>().Value;
+            return AddAmazonStorageService(services, options);
         }
 
         /// <summary>Adds a scoped <see cref="AmazonStorageService"/> using the provided <paramref name="config"/>.</summary>
@@ -65,11 +63,9 @@
 
             services.AddSingleton<IValidateOptions<AmazonStorageOptions>, ValidateAmazonStorageOptions>();
             services.Configure<AmazonStorageOptions>(config);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<AmazonStorageOptions>>().Value;
-                return services.AddAmazonStorageService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<AmazonStorageOptions>>().Value;
+            return services.AddAmazonStorageService(options);
         }
 
         /// <summary>Adds a scoped <see cref="AmazonStorageService"/> using the provided <paramref name="config"/> and <paramref name="configureBinder"/>.</summary>
@@ -104,11 +100,9 @@
 
             services.AddSingleton<IValidateOptions<AmazonStorageOptions>, ValidateAmazonStorageOptions>();
             services.Configure<AmazonStorageOptions>(config, configureBinder);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<AmazonStorageOptions>>().Value;
-                return services.AddAmazonStorageService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<AmazonStorageOptions>>().Value;
+            return services.AddAmazonStorageService(options);
         }
 
         private static IServiceCollection AddAmazonStorageService(

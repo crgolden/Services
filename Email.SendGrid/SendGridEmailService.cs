@@ -5,7 +5,7 @@
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Common;
+    using Common.Services;
     using JetBrains.Annotations;
     using SendGrid;
     using SendGrid.Helpers.Mail;
@@ -19,11 +19,25 @@
 
         /// <summary>Initializes a new instance of the <see cref="SendGridEmailService"/> class.</summary>
         /// <param name="sendGridClient">The send grid client.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="sendGridClient"/> is <see langword="null"/>.</exception>
-        public SendGridEmailService(ISendGridClient sendGridClient)
+        /// <param name="name">The name.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="sendGridClient"/> is <see langword="null"/>
+        /// or
+        /// <paramref name="name"/> is <see langword="null"/>.</exception>
+        public SendGridEmailService(
+            ISendGridClient sendGridClient,
+            string name = nameof(SendGridEmailService))
         {
+            if (IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             _sendGridClient = sendGridClient ?? throw new ArgumentNullException(nameof(sendGridClient));
+            Name = name;
         }
+
+        /// <inheritdoc />
+        public string Name { get; }
 
         /// <inheritdoc />
         public Task SendEmailAsync(
@@ -39,7 +53,7 @@
                 throw new ArgumentNullException(nameof(source));
             }
 
-            if (destinations == null)
+            if (destinations == default)
             {
                 throw new ArgumentNullException(nameof(destinations));
             }
@@ -60,7 +74,7 @@
                 throw new ArgumentNullException(nameof(htmlBody));
             }
 
-            async Task SendEmailAsync()
+            async Task SendEmail()
             {
                 var message = new SendGridMessage
                 {
@@ -82,7 +96,7 @@
                     .ConfigureAwait(false);
             }
 
-            return SendEmailAsync();
+            return SendEmail();
         }
     }
 }

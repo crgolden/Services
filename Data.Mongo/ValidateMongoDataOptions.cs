@@ -14,6 +14,11 @@
         /// <inheritdoc />
         public ValidateOptionsResult Validate(string name, MongoDataOptions options)
         {
+            if (IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             if (options == default)
             {
                 throw new ArgumentNullException(nameof(options));

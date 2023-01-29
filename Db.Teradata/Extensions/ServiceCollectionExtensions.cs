@@ -34,11 +34,9 @@
 
             services.AddSingleton<IValidateOptions<TeradataDbOptions>, ValidateTeradataDbOptions>();
             services.Configure(configureOptions);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<TeradataDbOptions>>().Value;
-                return services.AddTeradataDbService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<TeradataDbOptions>>().Value;
+            return AddTeradataDbService(services, options);
         }
 
         /// <summary>Adds a scoped <see cref="TeradataDbService"/> using the provided <paramref name="config"/>.</summary>
@@ -64,11 +62,9 @@
 
             services.AddSingleton<IValidateOptions<TeradataDbOptions>, ValidateTeradataDbOptions>();
             services.Configure<TeradataDbOptions>(config);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<TeradataDbOptions>>().Value;
-                return services.AddTeradataDbService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<TeradataDbOptions>>().Value;
+            return services.AddTeradataDbService(options);
         }
 
         /// <summary>Adds a scoped <see cref="TeradataDbService"/> using the provided <paramref name="config"/> and <paramref name="configureBinder"/>.</summary>
@@ -103,11 +99,9 @@
 
             services.AddSingleton<IValidateOptions<TeradataDbOptions>, ValidateTeradataDbOptions>();
             services.Configure<TeradataDbOptions>(config, configureBinder);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<TeradataDbOptions>>().Value;
-                return services.AddTeradataDbService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<TeradataDbOptions>>().Value;
+            return services.AddTeradataDbService(options);
         }
 
         private static IServiceCollection AddTeradataDbService(this IServiceCollection services, TeradataDbOptions options)

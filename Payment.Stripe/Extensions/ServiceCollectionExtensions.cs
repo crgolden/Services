@@ -1,7 +1,7 @@
 ﻿namespace Microsoft.Extensions.DependencyInjection
 {
     using System;
-    using Common;
+    using Common.Services;
     using Configuration;
     using JetBrains.Annotations;
     using Options;
@@ -35,11 +35,9 @@
 
             services.AddSingleton<IValidateOptions<StripePaymentOptions>, ValidateStripePaymentOptions>();
             services.Configure(configureOptions);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<StripePaymentOptions>>().Value;
-                return services.AddStripePaymentService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<StripePaymentOptions>>().Value;
+            return AddStripePaymentService(services, options);
         }
 
         /// <summary>Adds a scoped <see cref="StripePaymentService"/> using the provided <paramref name="config"/>.</summary>
@@ -65,11 +63,9 @@
 
             services.AddSingleton<IValidateOptions<StripePaymentOptions>, ValidateStripePaymentOptions>();
             services.Configure<StripePaymentOptions>(config);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<StripePaymentOptions>>().Value;
-                return services.AddStripePaymentService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<StripePaymentOptions>>().Value;
+            return services.AddStripePaymentService(options);
         }
 
         /// <summary>Adds a scoped <see cref="StripePaymentService"/> using the provided <paramref name="config"/> and <paramref name="configureBinder"/>.</summary>
@@ -104,11 +100,9 @@
 
             services.AddSingleton<IValidateOptions<StripePaymentOptions>, ValidateStripePaymentOptions>();
             services.Configure<StripePaymentOptions>(config, configureBinder);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<StripePaymentOptions>>().Value;
-                return services.AddStripePaymentService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<StripePaymentOptions>>().Value;
+            return services.AddStripePaymentService(options);
         }
 
         private static IServiceCollection AddStripePaymentService(this IServiceCollection services, StripePaymentOptions options)

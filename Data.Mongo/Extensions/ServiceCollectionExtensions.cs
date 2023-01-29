@@ -3,7 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using Common;
+    using Common.Services;
     using Configuration;
     using JetBrains.Annotations;
     using MongoDB.Driver;
@@ -19,63 +19,93 @@
     {
         /// <summary>
         /// Adds scoped <see cref="IDataCommandService"/> and <see cref="IDataQueryService"/> services
-        /// (identified by "MongoDB" and configured using <paramref name="configureOptions"/>)
+        /// (identified by <paramref name="name"/> and configured using <paramref name="configureOptions"/>)
         /// to <paramref name="services"/>.
         /// </summary>
         /// <param name="services">The <see cref="IServiceCollection"/> instance.</param>
         /// <param name="configureOptions">The action to perform on the bound <see cref="MongoDataOptions"/>.</param>
+        /// <param name="name">The name of the <see cref="MongoDataOptions"/> instance.</param>
         /// <returns>The <paramref name="services"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null" /> or <paramref name="configureOptions"/> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null" />
+        /// or
+        /// <paramref name="configureOptions"/> is <see langword="null" />
+        /// or
+        /// <paramref name="name"/> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentException">An <see cref="IMongoClient"/> instance identified by "MongoDB" has already been added to <paramref name="services"/>.</exception>
         public static IServiceCollection AddMongo(
             this IServiceCollection services,
-            Action<MongoDataOptions> configureOptions)
+            Action<MongoDataOptions> configureOptions,
+            string name = nameof(MongoDataService))
         {
             if (services == default)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            return services.Configure(nameof(MongoDB), configureOptions).AddMongo(nameof(MongoDB));
+            if (IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
+            return services.Configure(name, configureOptions).AddMongo(name);
         }
 
         /// <summary>
         /// Adds scoped <see cref="IDataCommandService"/> and <see cref="IDataQueryService"/> services
-        /// (identified by "MongoDB" and configured using <paramref name="config"/>)
+        /// (identified by <paramref name="name"/> and configured using <paramref name="config"/>)
         /// to <paramref name="services"/>.
         /// </summary>
         /// <param name="services">The <see cref="IServiceCollection"/> instance.</param>
         /// <param name="config">The <see cref="IConfigurationSection"/> of the <see cref="MongoDataOptions"/> instance.</param>
+        /// <param name="name">The name of the <see cref="MongoDataOptions"/> instance.</param>
         /// <returns>The <paramref name="services"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null" /> or <paramref name="config"/> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null" />
+        /// or
+        /// <paramref name="config"/> is <see langword="null" />
+        /// or
+        /// <paramref name="name"/> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentException">An <see cref="IMongoClient"/> instance identified by "MongoDB" has already been added to <paramref name="services"/>.</exception>
         public static IServiceCollection AddMongo(
             this IServiceCollection services,
-            IConfigurationSection config)
+            IConfigurationSection config,
+            string name = nameof(MongoDataService))
         {
             if (services == default)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            return services.Configure<MongoDataOptions>(nameof(MongoDB), config).AddMongo(nameof(MongoDB));
+            if (IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
+            return services.Configure<MongoDataOptions>(name, config).AddMongo(name);
         }
 
         /// <summary>
         /// Adds scoped <see cref="IDataCommandService"/> and <see cref="IDataQueryService"/> services
-        /// (identified by "MongoDB" and configured using <paramref name="config"/> and <paramref name="configureBinder"/>)
+        /// (identified by <paramref name="name"/> and configured using <paramref name="config"/> and <paramref name="configureBinder"/>)
         /// to <paramref name="services"/>.
         /// </summary>
         /// <param name="services">The <see cref="IServiceCollection"/> instance.</param>
         /// <param name="config">The <see cref="IConfigurationSection"/> of the <see cref="MongoDataOptions"/> instance.</param>
         /// <param name="configureBinder">The action to perform on the <see cref="BinderOptions"/> of the <see cref="ConfigurationBinder"/>.</param>
+        /// <param name="name">The name of the <see cref="MongoDataOptions"/> instance.</param>
         /// <returns>The <paramref name="services"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null" /> or <paramref name="config"/> is <see langword="null" /> or <paramref name="configureBinder"/> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null" />
+        /// or
+        /// <paramref name="config"/> is <see langword="null" />
+        /// or
+        /// <paramref name="configureBinder"/> is <see langword="null" />
+        /// or
+        /// <paramref name="name"/> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentException">An <see cref="IMongoClient"/> instance identified by "MongoDB" has already been added to <paramref name="services"/>.</exception>
         public static IServiceCollection AddMongo(
             this IServiceCollection services,
             IConfigurationSection config,
-            Action<BinderOptions> configureBinder)
+            Action<BinderOptions> configureBinder,
+            string name = nameof(MongoDataService))
         {
             if (services == default)
             {
@@ -92,78 +122,9 @@
                 throw new ArgumentNullException(nameof(configureBinder));
             }
 
-            return services.Configure<MongoDataOptions>(nameof(MongoDB), config, configureBinder).AddMongo(nameof(MongoDB));
-        }
-
-        /// <summary>
-        /// Adds scoped <see cref="IDataCommandService"/> and <see cref="IDataQueryService"/> services
-        /// (identified by <paramref name="name"/> and configured using <paramref name="configureOptions"/>)
-        /// to <paramref name="services"/>.
-        /// </summary>
-        /// <param name="services">The <see cref="IServiceCollection"/> instance.</param>
-        /// <param name="name">The name of the <see cref="MongoDataOptions"/> instance.</param>
-        /// <param name="configureOptions">The action to perform on the bound <see cref="MongoDataOptions"/>.</param>
-        /// <returns>The <paramref name="services"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null" /> or <paramref name="name"/> is <see langword="null" /> or <paramref name="configureOptions"/> is <see langword="null" />.</exception>
-        /// <exception cref="ArgumentException">An <see cref="IMongoClient"/> instance identified by <paramref name="name"/> has already been added to <paramref name="services"/>.</exception>
-        public static IServiceCollection AddMongo(
-            this IServiceCollection services,
-            string name,
-            Action<MongoDataOptions> configureOptions)
-        {
-            if (services == default)
+            if (IsNullOrWhiteSpace(name))
             {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            return services.Configure(name, configureOptions).AddMongo(name);
-        }
-
-        /// <summary>
-        /// Adds scoped <see cref="IDataCommandService"/> and <see cref="IDataQueryService"/> services
-        /// (identified by <paramref name="name"/> and configured using <paramref name="config"/>)
-        /// to <paramref name="services"/>.
-        /// </summary>
-        /// <param name="services">The <see cref="IServiceCollection"/> instance.</param>
-        /// <param name="name">The name of the <see cref="MongoDataOptions"/> instance.</param>
-        /// <param name="config">The <see cref="IConfigurationSection"/> of the <see cref="MongoDataOptions"/> instance.</param>
-        /// <returns>The <paramref name="services"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null" /> or <paramref name="name"/> is <see langword="null" /> or <paramref name="config"/> is <see langword="null" />.</exception>
-        /// <exception cref="ArgumentException">An <see cref="IMongoClient"/> instance identified by <paramref name="name"/> has already been added to <paramref name="services"/>.</exception>
-        public static IServiceCollection AddMongo(
-            this IServiceCollection services,
-            string name,
-            IConfigurationSection config)
-        {
-            if (services == default)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            return services.Configure<MongoDataOptions>(name, config).AddMongo(name);
-        }
-
-        /// <summary>
-        /// Adds scoped <see cref="IDataCommandService"/> and <see cref="IDataQueryService"/> services
-        /// (identified by <paramref name="name"/> and configured using <paramref name="config"/> and <paramref name="configureBinder"/>)
-        /// to <paramref name="services"/>.
-        /// </summary>
-        /// <param name="services">The <see cref="IServiceCollection"/> instance.</param>
-        /// <param name="name">The name of the <see cref="MongoDataOptions"/> instance.</param>
-        /// <param name="config">The <see cref="IConfigurationSection"/> of the <see cref="MongoDataOptions"/> instance.</param>
-        /// <param name="configureBinder">The action to perform on the <see cref="BinderOptions"/> of the <see cref="ConfigurationBinder"/>.</param>
-        /// <returns>The <paramref name="services"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null" /> or <paramref name="name"/> is <see langword="null" /> or <paramref name="config"/> is <see langword="null" /> or <paramref name="configureBinder"/> is <see langword="null" />.</exception>
-        /// <exception cref="ArgumentException">An <see cref="IMongoClient"/> instance identified by <paramref name="name"/> has already been added to <paramref name="services"/>.</exception>
-        public static IServiceCollection AddMongo(
-            this IServiceCollection services,
-            string name,
-            IConfigurationSection config,
-            Action<BinderOptions> configureBinder)
-        {
-            if (services == default)
-            {
-                throw new ArgumentNullException(nameof(services));
+                throw new ArgumentNullException(nameof(name));
             }
 
             return services.Configure<MongoDataOptions>(name, config, configureBinder).AddMongo(name);

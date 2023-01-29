@@ -3,7 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using Common;
+    using Common.Services;
     using Configuration;
     using JetBrains.Annotations;
     using NHibernate;

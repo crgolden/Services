@@ -4,7 +4,7 @@
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
-    using Common;
+    using Common.Services;
     using JetBrains.Annotations;
     using Microsoft.Azure.ServiceBus.Core;
     using Microsoft.Extensions.Hosting;

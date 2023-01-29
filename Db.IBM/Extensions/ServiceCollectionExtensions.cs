@@ -34,11 +34,9 @@
 
             services.AddSingleton<IValidateOptions<IBMDbOptions>, ValidateIBMDbOptions>();
             services.Configure(configureOptions);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<IBMDbOptions>>().Value;
-                return services.AddIBMDbService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<IBMDbOptions>>().Value;
+            return AddIBMDbService(services, options);
         }
 
         /// <summary>Adds a scoped <see cref="IBMDbService"/> using the provided <paramref name="config"/>.</summary>
@@ -64,11 +62,9 @@
 
             services.AddSingleton<IValidateOptions<IBMDbOptions>, ValidateIBMDbOptions>();
             services.Configure<IBMDbOptions>(config);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<IBMDbOptions>>().Value;
-                return services.AddIBMDbService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<IBMDbOptions>>().Value;
+            return services.AddIBMDbService(options);
         }
 
         /// <summary>Adds a scoped <see cref="IBMDbService"/> using the provided <paramref name="config"/> and <paramref name="configureBinder"/>.</summary>
@@ -103,11 +99,9 @@
 
             services.AddSingleton<IValidateOptions<IBMDbOptions>, ValidateIBMDbOptions>();
             services.Configure<IBMDbOptions>(config, configureBinder);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<IBMDbOptions>>().Value;
-                return services.AddIBMDbService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<IBMDbOptions>>().Value;
+            return services.AddIBMDbService(options);
         }
 
         private static IServiceCollection AddIBMDbService(this IServiceCollection services, IBMDbOptions options)

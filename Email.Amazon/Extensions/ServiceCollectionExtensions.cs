@@ -2,7 +2,7 @@
 {
     using System;
     using Amazon.SimpleEmail;
-    using Common;
+    using Common.Services;
     using Configuration;
     using JetBrains.Annotations;
     using Options;
@@ -35,11 +35,9 @@
 
             services.AddSingleton<IValidateOptions<AmazonEmailOptions>, ValidateAmazonEmailOptions>();
             services.Configure(configureOptions);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<AmazonEmailOptions>>().Value;
-                return services.AddAmazonEmailService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<AmazonEmailOptions>>().Value;
+            return AddAmazonEmailService(services, options);
         }
 
         /// <summary>Adds a scoped <see cref="AmazonEmailService"/> using the provided <paramref name="config"/>.</summary>
@@ -65,11 +63,9 @@
 
             services.AddSingleton<IValidateOptions<AmazonEmailOptions>, ValidateAmazonEmailOptions>();
             services.Configure<AmazonEmailOptions>(config);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<AmazonEmailOptions>>().Value;
-                return services.AddAmazonEmailService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<AmazonEmailOptions>>().Value;
+            return services.AddAmazonEmailService(options);
         }
 
         /// <summary>Adds a scoped <see cref="AmazonEmailService"/> using the provided <paramref name="config"/> and <paramref name="configureBinder"/>.</summary>
@@ -104,11 +100,9 @@
 
             services.AddSingleton<IValidateOptions<AmazonEmailOptions>, ValidateAmazonEmailOptions>();
             services.Configure<AmazonEmailOptions>(config, configureBinder);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<AmazonEmailOptions>>().Value;
-                return services.AddAmazonEmailService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<AmazonEmailOptions>>().Value;
+            return services.AddAmazonEmailService(options);
         }
 
         private static IServiceCollection AddAmazonEmailService(this IServiceCollection services, AmazonEmailOptions options)

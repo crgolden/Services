@@ -16,12 +16,17 @@
         /// <inheritdoc />
         public void Configure(MongoDataOptions options)
         {
-            Configure(nameof(MongoDB), options);
+            Configure(nameof(MongoDataService), options);
         }
 
         /// <inheritdoc />
         public void Configure(string name, MongoDataOptions options)
         {
+            if (IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             if (options == default)
             {
                 throw new ArgumentNullException(nameof(options));
@@ -60,7 +65,7 @@
                         AuthenticationSource = options.MongoClientSettings.Credential?.Source,
                         Compressors = options.MongoClientSettings.Compressors,
                         ConnectTimeout = options.MongoClientSettings.ConnectTimeout,
-                        ConnectionMode = options.MongoClientSettings.ConnectionMode,
+                        DirectConnection = options.MongoClientSettings.DirectConnection,
                         DatabaseName = options.DatabaseName,
                         FSync = options.MongoClientSettings.WriteConcern?.FSync,
                         HeartbeatInterval = options.MongoClientSettings.HeartbeatInterval,

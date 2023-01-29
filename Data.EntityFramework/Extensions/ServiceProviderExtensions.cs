@@ -24,8 +24,9 @@
 
             async Task<IServiceProvider> MigrateDatabase()
             {
-                using (var scope = provider.CreateScope())
-                using (var context = scope.ServiceProvider.GetRequiredService<DbContext>())
+                using var scope = provider.CreateScope();
+                var context = scope.ServiceProvider.GetRequiredService<DbContext>();
+                await using (context.ConfigureAwait(false))
                 {
                     await context.Database.MigrateAsync(cancellationToken).ConfigureAwait(false);
                 }

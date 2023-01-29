@@ -6,7 +6,7 @@
     using System.Linq.Expressions;
     using System.Threading;
     using System.Threading.Tasks;
-    using Common;
+    using Common.Services;
     using JetBrains.Annotations;
     using NHibernate;
     using NHibernate.Linq;
@@ -100,7 +100,7 @@
         public virtual Task DeleteRangeAsync<T>(IEnumerable<Expression<Func<T, bool>>> predicates, CancellationToken cancellationToken = default)
             where T : class
         {
-            if (predicates == null)
+            if (predicates == default)
             {
                 throw new ArgumentNullException(nameof(predicates));
             }
@@ -131,7 +131,7 @@
         public virtual async Task SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             var transaction = Session.GetCurrentTransaction();
-            if (!Options.UseTransaction || transaction == default || !transaction.IsActive)
+            if (!Options.UseTransaction || transaction is not { IsActive: true })
             {
                 return;
             }
@@ -164,7 +164,7 @@
         public virtual Task UpdateRangeAsync<T>(IDictionary<Expression<Func<T, bool>>, T> keyValuePairs, CancellationToken cancellationToken = default)
             where T : class
         {
-            if (keyValuePairs == null)
+            if (keyValuePairs == default)
             {
                 throw new ArgumentNullException(nameof(keyValuePairs));
             }
@@ -302,7 +302,7 @@
         /// <inheritdoc />
         public virtual Task ForEachAsync<T>(IQueryable<T> source, Action<T> action, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }

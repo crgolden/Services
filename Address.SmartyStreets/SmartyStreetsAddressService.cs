@@ -2,13 +2,14 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using System.Threading.Tasks;
     using Common;
+    using Common.Services;
     using JetBrains.Annotations;
     using SmartyStreets;
     using static System.Linq.Enumerable;
+    using static System.String;
     using static System.Threading.Tasks.Task;
     using InternationalLookup = SmartyStreets.InternationalStreetApi.Lookup;
     using UsLookup = SmartyStreets.USStreetApi.Lookup;
@@ -23,15 +24,29 @@
         /// <summary>Initializes a new instance of the <see cref="SmartyStreetsAddressService"/> class.</summary>
         /// <param name="usClient">The us client.</param>
         /// <param name="internationalClient">The international client.</param>
+        /// <param name="name">The name.</param>
         /// <exception cref="ArgumentNullException"><paramref name="usClient"/> is <see langword="null"/>
         /// or
-        /// <paramref name="internationalClient"/> is <see langword="null"/>.</exception>
-        [SuppressMessage("StyleCop.CSharp.NamingRules", "SA1305:Field names should not use Hungarian notation", Justification = "Lowercased US")]
-        public SmartyStreetsAddressService(IClient<UsLookup> usClient, IClient<InternationalLookup> internationalClient)
+        /// <paramref name="internationalClient"/> is <see langword="null"/>
+        /// or
+        /// <paramref name="name"/> is <see langword="null"/>.</exception>
+        public SmartyStreetsAddressService(
+            IClient<UsLookup> usClient,
+            IClient<InternationalLookup> internationalClient,
+            string name = nameof(SmartyStreetsAddressService))
         {
+            if (IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             _usClient = usClient ?? throw new ArgumentNullException(nameof(usClient));
             _internationalClient = internationalClient ?? throw new ArgumentNullException(nameof(internationalClient));
+            Name = name;
         }
+
+        /// <inheritdoc />
+        public string Name { get; }
 
         /// <inheritdoc />
         public Task<IEnumerable<Address>> ValidateAsync(Address address, CancellationToken cancellationToken = default)

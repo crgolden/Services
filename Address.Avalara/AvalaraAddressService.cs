@@ -4,30 +4,47 @@
     using System.Collections.Generic;
     using System.Net.Http;
     using System.Text;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Common;
+    using Common.Services;
+    using JetBrains.Annotations;
     using Models;
     using static System.Linq.Enumerable;
+    using static System.String;
     using static System.Text.Json.JsonSerializer;
 
     /// <inheritdoc />
+    [PublicAPI]
     public class AvalaraAddressService : IAddressService
     {
         private readonly HttpClient _httpClient;
 
         /// <summary>Initializes a new instance of the <see cref="AvalaraAddressService"/> class.</summary>
         /// <param name="httpClientFactory">The HTTP client factory.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="httpClientFactory"/> is <see langword="null"/>.</exception>
-        public AvalaraAddressService(IHttpClientFactory httpClientFactory)
+        /// <param name="name">The name.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="httpClientFactory"/> is <see langword="null"/>
+        /// or
+        /// <paramref name="name"/> is <see langword="null" />.</exception>
+        public AvalaraAddressService(IHttpClientFactory httpClientFactory, string name = nameof(AvalaraAddressService))
         {
             if (httpClientFactory == default)
             {
                 throw new ArgumentNullException(nameof(httpClientFactory));
             }
 
-            _httpClient = httpClientFactory.CreateClient(nameof(AvalaraAddressService));
+            if (IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
+            _httpClient = httpClientFactory.CreateClient(name);
+            Name = name;
         }
+
+        /// <inheritdoc/>
+        public string Name { get; }
 
         /// <inheritdoc />
         public Task<IEnumerable<Address>> ValidateAsync(Address address, CancellationToken cancellationToken = default)
@@ -37,7 +54,7 @@
                 throw new ArgumentNullException(nameof(address));
             }
 
-            async Task<IEnumerable<Address>> ValidateAsync()
+            async Task<IEnumerable<Address>> Validate()
             {
                 AddressResolutionModel result;
                 var stringBuilder = new StringBuilder($"{_httpClient.BaseAddress}/addresses/resolve");
@@ -51,7 +68,7 @@
                 {
                     response.EnsureSuccessStatusCode();
                     var body = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-                    result = await DeserializeAsync<AddressResolutionModel>(body, default, cancellationToken).ConfigureAwait(false);
+                    result = await DeserializeAsync<AddressResolutionModel>(body, default(JsonSerializerOptions), cancellationToken).ConfigureAwait(false);
                 }
 
                 var addresses = result?.ValidatedAddresses == null
@@ -67,7 +84,7 @@
                 return addresses;
             }
 
-            return ValidateAsync();
+            return Validate();
         }
     }
 }

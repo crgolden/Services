@@ -7,7 +7,7 @@
     using System.Threading.Tasks;
     using Amazon.SimpleEmail;
     using Amazon.SimpleEmail.Model;
-    using Common;
+    using Common.Services;
     using JetBrains.Annotations;
     using static System.String;
     using static System.Text.Encoding;
@@ -20,11 +20,25 @@
 
         /// <summary>Initializes a new instance of the <see cref="AmazonEmailService"/> class.</summary>
         /// <param name="amazonSimpleEmailService">The amazon simple email service.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="amazonSimpleEmailService"/> is <see langword="null"/>.</exception>
-        public AmazonEmailService(IAmazonSimpleEmailService amazonSimpleEmailService)
+        /// <param name="name">The name.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="amazonSimpleEmailService"/> is <see langword="null"/>
+        /// or
+        /// <paramref name="name"/> is <see langword="null"/>.</exception>
+        public AmazonEmailService(
+            IAmazonSimpleEmailService amazonSimpleEmailService,
+            string name = nameof(AmazonEmailService))
         {
+            if (IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             _amazonSimpleEmailService = amazonSimpleEmailService ?? throw new ArgumentNullException(nameof(amazonSimpleEmailService));
+            Name = name;
         }
+
+        /// <inheritdoc />
+        public string Name { get; }
 
         /// <inheritdoc />
         public Task SendEmailAsync(
@@ -40,7 +54,7 @@
                 throw new ArgumentNullException(nameof(source));
             }
 
-            if (destinations == null)
+            if (destinations == default)
             {
                 throw new ArgumentNullException(nameof(destinations));
             }
@@ -61,7 +75,7 @@
                 throw new ArgumentNullException(nameof(htmlBody));
             }
 
-            async Task SendEmailAsync()
+            async Task SendEmail()
             {
                 var sendEmailRequest = new SendEmailRequest
                 {
@@ -97,7 +111,7 @@
                     .ConfigureAwait(false);
             }
 
-            return SendEmailAsync();
+            return SendEmail();
         }
     }
 }

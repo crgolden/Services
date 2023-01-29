@@ -34,11 +34,9 @@
 
             services.AddSingleton<IValidateOptions<SqlDbOptions>, ValidateSqlDbOptions>();
             services.Configure(configureOptions);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<SqlDbOptions>>().Value;
-                return services.AddSqlDbService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<SqlDbOptions>>().Value;
+            return AddSqlDbService(services, options);
         }
 
         /// <summary>Adds a scoped <see cref="SqlDbService"/> using the provided <paramref name="config"/>.</summary>
@@ -64,11 +62,9 @@
 
             services.AddSingleton<IValidateOptions<SqlDbOptions>, ValidateSqlDbOptions>();
             services.Configure<SqlDbOptions>(config);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<SqlDbOptions>>().Value;
-                return services.AddSqlDbService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<SqlDbOptions>>().Value;
+            return services.AddSqlDbService(options);
         }
 
         /// <summary>Adds a scoped <see cref="SqlDbService"/> using the provided <paramref name="config"/> and <paramref name="configureBinder"/>.</summary>
@@ -103,11 +99,9 @@
 
             services.AddSingleton<IValidateOptions<SqlDbOptions>, ValidateSqlDbOptions>();
             services.Configure<SqlDbOptions>(config, configureBinder);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<SqlDbOptions>>().Value;
-                return services.AddSqlDbService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<SqlDbOptions>>().Value;
+            return services.AddSqlDbService(options);
         }
 
         private static IServiceCollection AddSqlDbService(this IServiceCollection services, SqlDbOptions options)

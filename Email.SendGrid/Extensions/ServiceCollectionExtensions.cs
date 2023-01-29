@@ -1,7 +1,7 @@
 ﻿namespace Microsoft.Extensions.DependencyInjection
 {
     using System;
-    using Common;
+    using Common.Services;
     using Configuration;
     using JetBrains.Annotations;
     using Options;
@@ -35,11 +35,9 @@
 
             services.AddSingleton<IValidateOptions<SendGridEmailOptions>, ValidateSendGridEmailOptions>();
             services.Configure(configureOptions);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<SendGridEmailOptions>>().Value;
-                return services.AddSendGridEmailService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<SendGridEmailOptions>>().Value;
+            return AddSendGridEmailService(services, options);
         }
 
         /// <summary>Adds a <see cref="SendGridEmailService"/> to <paramref name="services"/> using the provided <paramref name="config"/>.</summary>
@@ -65,11 +63,9 @@
 
             services.AddSingleton<IValidateOptions<SendGridEmailOptions>, ValidateSendGridEmailOptions>();
             services.Configure<SendGridEmailOptions>(config);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<SendGridEmailOptions>>().Value;
-                return services.AddSendGridEmailService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<SendGridEmailOptions>>().Value;
+            return services.AddSendGridEmailService(options);
         }
 
         /// <summary>Adds a <see cref="SendGridEmailService"/> to <paramref name="services"/> using the provided <paramref name="config"/> and <paramref name="configureBinder"/>.</summary>
@@ -104,11 +100,9 @@
 
             services.AddSingleton<IValidateOptions<SendGridEmailOptions>, ValidateSendGridEmailOptions>();
             services.Configure<SendGridEmailOptions>(config, configureBinder);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<SendGridEmailOptions>>().Value;
-                return services.AddSendGridEmailService(options);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<SendGridEmailOptions>>().Value;
+            return services.AddSendGridEmailService(options);
         }
 
         private static IServiceCollection AddSendGridEmailService(

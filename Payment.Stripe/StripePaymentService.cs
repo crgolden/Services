@@ -3,7 +3,7 @@
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Common;
+    using Common.Services;
     using JetBrains.Annotations;
     using Stripe;
     using static System.String;
@@ -16,11 +16,25 @@
 
         /// <summary>Initializes a new instance of the <see cref="StripePaymentService"/> class.</summary>
         /// <param name="stripeClient">The Stripe client.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="stripeClient"/> is <see langword="null"/>.</exception>
-        public StripePaymentService(IStripeClient stripeClient)
+        /// <param name="name">The name.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="stripeClient"/> is <see langword="null"/>
+        /// or
+        /// <paramref name="name"/> is <see langword="null"/>.</exception>
+        public StripePaymentService(
+            IStripeClient stripeClient,
+            string name = nameof(StripePaymentService))
         {
+            if (IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             _stripeClient = stripeClient ?? throw new ArgumentNullException(nameof(stripeClient));
+            Name = name;
         }
+
+        /// <inheritdoc />
+        public string Name { get; }
 
         /// <inheritdoc />
         public Task<string> GetCustomerAsync(string customerId, CancellationToken cancellationToken = default)

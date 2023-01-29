@@ -6,7 +6,7 @@
     using System.Linq.Expressions;
     using System.Threading;
     using System.Threading.Tasks;
-    using Common;
+    using Common.Services;
     using JetBrains.Annotations;
     using Microsoft.EntityFrameworkCore;
     using static System.Linq.Enumerable;
@@ -20,16 +20,18 @@
         /// <summary>Initializes a new instance of the <see cref="EntityFrameworkDataService"/> class.</summary>
         /// <param name="context">The <see cref="DbContext"/>.</param>
         /// <param name="name">The name (default is "EntityFrameworkCore").</param>
-        /// <exception cref="ArgumentNullException"><paramref name="context"/> is <see langword="null" /> or <paramref name="name"/> is <see langword="null" />.</exception>
-        public EntityFrameworkDataService(DbContext context, string name = nameof(Microsoft.EntityFrameworkCore))
+        /// <exception cref="ArgumentNullException"><paramref name="context"/> is <see langword="null" />
+        /// or
+        /// <paramref name="name"/> is <see langword="null" />.</exception>
+        public EntityFrameworkDataService(DbContext context, string name = nameof(EntityFrameworkDataService))
         {
             if (IsNullOrWhiteSpace(name))
             {
                 throw new ArgumentNullException(nameof(name));
             }
 
-            Name = name;
             Context = context ?? throw new ArgumentNullException(nameof(context));
+            Name = name;
         }
 
         /// <inheritdoc />
@@ -56,7 +58,7 @@
         public virtual Task<IEnumerable<T>> CreateRangeAsync<T>(IEnumerable<T> records, CancellationToken cancellationToken = default)
             where T : class
         {
-            if (records == null)
+            if (records == default)
             {
                 throw new ArgumentNullException(nameof(records));
             }
@@ -75,7 +77,7 @@
                 throw new ArgumentNullException(nameof(predicate));
             }
 
-            async Task DeleteAsync()
+            async Task Delete()
             {
                 var record = await Context.Set<T>().SingleOrDefaultAsync(predicate, cancellationToken).ConfigureAwait(false);
                 if (record == default)
@@ -86,14 +88,14 @@
                 Context.Set<T>().Remove(record);
             }
 
-            return DeleteAsync();
+            return Delete();
         }
 
         /// <inheritdoc />
         public virtual Task DeleteRangeAsync<T>(IEnumerable<Expression<Func<T, bool>>> predicates, CancellationToken cancellationToken = default)
             where T : class
         {
-            if (predicates == null)
+            if (predicates == default)
             {
                 throw new ArgumentNullException(nameof(predicates));
             }
@@ -126,7 +128,7 @@
         public virtual Task UpdateRangeAsync<T>(IDictionary<Expression<Func<T, bool>>, T> keyValuePairs, CancellationToken cancellationToken = default)
             where T : class
         {
-            if (keyValuePairs == null)
+            if (keyValuePairs == default)
             {
                 throw new ArgumentNullException(nameof(keyValuePairs));
             }
@@ -138,7 +140,7 @@
         /// <inheritdoc />
         public virtual Task<bool> AnyAsync<T>(IQueryable<T> source, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -149,7 +151,7 @@
         /// <inheritdoc />
         public virtual Task<bool> AnyAsync<T>(IQueryable<T> source, Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -165,7 +167,7 @@
         /// <inheritdoc />
         public virtual Task<decimal?> AverageAsync<T>(IQueryable<T> source, Expression<Func<T, decimal?>> selector, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -181,7 +183,7 @@
         /// <inheritdoc />
         public virtual Task<decimal> AverageAsync<T>(IQueryable<T> source, Expression<Func<T, decimal>> selector, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -197,7 +199,7 @@
         /// <inheritdoc />
         public virtual Task<double?> AverageAsync<T>(IQueryable<T> source, Expression<Func<T, double?>> selector, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -213,7 +215,7 @@
         /// <inheritdoc />
         public virtual Task<double> AverageAsync<T>(IQueryable<T> source, Expression<Func<T, double>> selector, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -229,7 +231,7 @@
         /// <inheritdoc />
         public virtual Task<float?> AverageAsync<T>(IQueryable<T> source, Expression<Func<T, float?>> selector, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -245,7 +247,7 @@
         /// <inheritdoc />
         public virtual Task<float> AverageAsync<T>(IQueryable<T> source, Expression<Func<T, float>> selector, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -261,7 +263,7 @@
         /// <inheritdoc />
         public virtual Task<double?> AverageAsync<T>(IQueryable<T> source, Expression<Func<T, int?>> selector, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -277,7 +279,7 @@
         /// <inheritdoc />
         public virtual Task<double> AverageAsync<T>(IQueryable<T> source, Expression<Func<T, int>> selector, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -293,7 +295,7 @@
         /// <inheritdoc />
         public virtual Task<double?> AverageAsync<T>(IQueryable<T> source, Expression<Func<T, long?>> selector, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -309,7 +311,7 @@
         /// <inheritdoc />
         public virtual Task<double> AverageAsync<T>(IQueryable<T> source, Expression<Func<T, long>> selector, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -325,7 +327,7 @@
         /// <inheritdoc />
         public virtual Task<int> CountAsync<T>(IQueryable<T> source, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -336,7 +338,7 @@
         /// <inheritdoc />
         public virtual Task<int> CountAsync<T>(IQueryable<T> source, Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -352,7 +354,7 @@
         /// <inheritdoc />
         public virtual Task<T> FirstAsync<T>(IQueryable<T> source, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -363,7 +365,7 @@
         /// <inheritdoc />
         public virtual Task<T> FirstAsync<T>(IQueryable<T> source, Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -379,7 +381,7 @@
         /// <inheritdoc />
         public virtual Task<T> FirstOrDefaultAsync<T>(IQueryable<T> source, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -390,7 +392,7 @@
         /// <inheritdoc />
         public virtual Task<T> FirstOrDefaultAsync<T>(IQueryable<T> source, Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -406,7 +408,7 @@
         /// <inheritdoc />
         public virtual Task ForEachAsync<T>(IQueryable<T> source, Action<T> action, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -439,7 +441,7 @@
         /// <inheritdoc />
         public virtual Task<long> LongCountAsync<T>(IQueryable<T> source, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -450,7 +452,7 @@
         /// <inheritdoc />
         public virtual Task<long> LongCountAsync<T>(IQueryable<T> source, Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -466,7 +468,7 @@
         /// <inheritdoc />
         public virtual Task<T> MaxAsync<T>(IQueryable<T> source, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -477,7 +479,7 @@
         /// <inheritdoc />
         public virtual Task<TResult> MaxAsync<T, TResult>(IQueryable<T> source, Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -493,7 +495,7 @@
         /// <inheritdoc />
         public virtual Task<T> MinAsync<T>(IQueryable<T> source, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -504,7 +506,7 @@
         /// <inheritdoc />
         public virtual Task<TResult> MinAsync<T, TResult>(IQueryable<T> source, Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -527,7 +529,7 @@
         /// <inheritdoc />
         public virtual Task<T> SingleAsync<T>(IQueryable<T> source, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -538,7 +540,7 @@
         /// <inheritdoc />
         public virtual Task<T> SingleAsync<T>(IQueryable<T> source, Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -554,7 +556,7 @@
         /// <inheritdoc />
         public virtual Task<T> SingleOrDefaultAsync<T>(IQueryable<T> source, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -565,7 +567,7 @@
         /// <inheritdoc />
         public virtual Task<T> SingleOrDefaultAsync<T>(IQueryable<T> source, Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -581,7 +583,7 @@
         /// <inheritdoc />
         public virtual Task<decimal?> SumAsync<T>(IQueryable<T> source, Expression<Func<T, decimal?>> selector, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -597,7 +599,7 @@
         /// <inheritdoc />
         public virtual Task<decimal> SumAsync<T>(IQueryable<T> source, Expression<Func<T, decimal>> selector, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -613,7 +615,7 @@
         /// <inheritdoc />
         public virtual Task<double?> SumAsync<T>(IQueryable<T> source, Expression<Func<T, double?>> selector, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -629,7 +631,7 @@
         /// <inheritdoc />
         public virtual Task<double> SumAsync<T>(IQueryable<T> source, Expression<Func<T, double>> selector, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -645,7 +647,7 @@
         /// <inheritdoc />
         public virtual Task<float?> SumAsync<T>(IQueryable<T> source, Expression<Func<T, float?>> selector, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -661,7 +663,7 @@
         /// <inheritdoc />
         public virtual Task<float> SumAsync<T>(IQueryable<T> source, Expression<Func<T, float>> selector, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -677,7 +679,7 @@
         /// <inheritdoc />
         public virtual Task<int?> SumAsync<T>(IQueryable<T> source, Expression<Func<T, int?>> selector, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -693,7 +695,7 @@
         /// <inheritdoc />
         public virtual Task<int> SumAsync<T>(IQueryable<T> source, Expression<Func<T, int>> selector, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -709,7 +711,7 @@
         /// <inheritdoc />
         public virtual Task<long> SumAsync<T>(IQueryable<T> source, Expression<Func<T, long>> selector, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -725,7 +727,7 @@
         /// <inheritdoc />
         public virtual Task<long?> SumAsync<T>(IQueryable<T> source, Expression<Func<T, long?>> selector, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -741,7 +743,7 @@
         /// <inheritdoc />
         public virtual Task<List<T>> ToListAsync<T>(IQueryable<T> source, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source == default)
             {
                 throw new ArgumentNullException(nameof(source));
             }

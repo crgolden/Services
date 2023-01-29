@@ -7,7 +7,7 @@
     using System.Threading.Tasks;
     using Amazon.S3;
     using Amazon.S3.Model;
-    using Common;
+    using Common.Services;
     using JetBrains.Annotations;
     using static System.String;
 
@@ -19,11 +19,25 @@
 
         /// <summary>Initializes a new instance of the <see cref="AmazonStorageService"/> class.</summary>
         /// <param name="amazonS3">The <seealso cref="IAmazonS3"/>.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="amazonS3" /> is <see langword="null" />.</exception>
-        public AmazonStorageService(IAmazonS3 amazonS3)
+        /// <param name="name">The name.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="amazonS3" /> is <see langword="null" />
+        /// or
+        /// <paramref name="name" /> is <see langword="null" />.</exception>
+        public AmazonStorageService(
+            IAmazonS3 amazonS3,
+            string name = nameof(AmazonStorageService))
         {
+            if (IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             _amazonS3 = amazonS3 ?? throw new ArgumentNullException(nameof(amazonS3));
+            Name = name;
         }
+
+        /// <inheritdoc />
+        public string Name { get; }
 
         /// <inheritdoc />
         public Task<Uri> Upload(
@@ -47,7 +61,7 @@
                 throw new ArgumentNullException(nameof(folderName));
             }
 
-            async Task<Uri> Upload()
+            async Task<Uri> UploadAsync()
             {
                 var putObjectRequest = new PutObjectRequest
                 {
@@ -61,7 +75,7 @@
                 return new Uri($"https://s3.amazonaws.com/{folderName}/{fileName}");
             }
 
-            return Upload();
+            return UploadAsync();
         }
 
         /// <inheritdoc />
@@ -80,7 +94,7 @@
                 throw new ArgumentNullException(nameof(folderName));
             }
 
-            async Task Delete()
+            async Task DeleteAsync()
             {
                 var deleteObjectRequest = new DeleteObjectRequest
                 {
@@ -92,7 +106,7 @@
                     .ConfigureAwait(false);
             }
 
-            return Delete();
+            return DeleteAsync();
         }
 
         /// <inheritdoc />
@@ -105,7 +119,7 @@
                 throw new ArgumentNullException(nameof(folderName));
             }
 
-            async Task DeleteAll()
+            async Task DeleteAllAsync()
             {
                 var listObjectsRequest = new ListObjectsV2Request
                 {
@@ -127,14 +141,14 @@
                     .ConfigureAwait(false);
             }
 
-            return DeleteAll();
+            return DeleteAllAsync();
         }
 
         /// <inheritdoc />
         public Uri GetUrl(
             string fileName,
             string folderName,
-            DateTime expiration)
+            DateTimeOffset expiration)
         {
             if (IsNullOrWhiteSpace(fileName))
             {
@@ -155,7 +169,7 @@
             {
                 BucketName = folderName,
                 Key = fileName,
-                Expires = expiration
+                Expires = expiration.Date
             };
             var preSignedUrl = _amazonS3.GetPreSignedURL(getPreSignedUrlRequest);
             return new Uri(preSignedUrl);

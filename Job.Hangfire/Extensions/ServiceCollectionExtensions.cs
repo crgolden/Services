@@ -43,7 +43,7 @@
                 throw new ArgumentNullException(nameof(configureOptions));
             }
 
-            if (hangfireJobDetails == null)
+            if (hangfireJobDetails == default)
             {
                 throw new ArgumentNullException(nameof(hangfireJobDetails));
             }
@@ -54,11 +54,9 @@
             }
 
             services.Configure(configureOptions);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<HangfireJobOptions>>().Value;
-                return services.AddHangfireJobService(options, hangfireJobDetails, configureGlobal, configureBackgroundJobServer);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<HangfireJobOptions>>().Value;
+            return AddHangfireJobService(services, options, hangfireJobDetails, configureGlobal, configureBackgroundJobServer);
         }
 
         /// <summary>Adds a hosted <see cref="HangfireJobService"/> using the provided <paramref name="config"/>.</summary>
@@ -92,7 +90,7 @@
                 throw new ArgumentNullException(nameof(config));
             }
 
-            if (hangfireJobDetails == null)
+            if (hangfireJobDetails == default)
             {
                 throw new ArgumentNullException(nameof(hangfireJobDetails));
             }
@@ -103,11 +101,9 @@
             }
 
             services.Configure<HangfireJobOptions>(config);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<HangfireJobOptions>>().Value;
-                return services.AddHangfireJobService(options, hangfireJobDetails, configureGlobal, configureBackgroundJobServer);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<HangfireJobOptions>>().Value;
+            return services.AddHangfireJobService(options, hangfireJobDetails, configureGlobal, configureBackgroundJobServer);
         }
 
         /// <summary>Adds a hosted <see cref="HangfireJobService"/> using the provided <paramref name="config"/> and <paramref name="configureBinder"/>.</summary>
@@ -150,7 +146,7 @@
                 throw new ArgumentNullException(nameof(configureBinder));
             }
 
-            if (hangfireJobDetails == null)
+            if (hangfireJobDetails == default)
             {
                 throw new ArgumentNullException(nameof(hangfireJobDetails));
             }
@@ -161,11 +157,9 @@
             }
 
             services.Configure<HangfireJobOptions>(config, configureBinder);
-            using (var provider = services.BuildServiceProvider(true))
-            {
-                var options = provider.GetRequiredService<IOptions<HangfireJobOptions>>().Value;
-                return services.AddHangfireJobService(options, hangfireJobDetails, configureGlobal, configureBackgroundJobServer);
-            }
+            using var provider = services.BuildServiceProvider(true);
+            var options = provider.GetRequiredService<IOptions<HangfireJobOptions>>().Value;
+            return services.AddHangfireJobService(options, hangfireJobDetails, configureGlobal, configureBackgroundJobServer);
         }
 
         private static IServiceCollection AddHangfireJobService(

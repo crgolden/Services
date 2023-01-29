@@ -1,7 +1,7 @@
 ﻿namespace System
 {
     using Collections.Generic;
-    using Common;
+    using Common.Services;
     using JetBrains.Annotations;
     using Linq;
     using Microsoft.Extensions.DependencyInjection;

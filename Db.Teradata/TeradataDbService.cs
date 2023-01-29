@@ -2,7 +2,7 @@
 {
     using System;
     using System.Data.Common;
-    using Common;
+    using Common.Services;
     using JetBrains.Annotations;
     using Teradata.Client.Provider;
 
